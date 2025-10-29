@@ -1,0 +1,3 @@
+        0
+        0	
+iMin  iMax  jMin  jMax  kMin  kMax   id

@@ -1,0 +1,36 @@
+bool parallel = 0      // specify the mode of computation. 0 - serial, 1 - parallel.
+
+string canonical_problem = constVolumeReactor  // The type of the problem. Generally, use "general", other choices include jicf, mixingLayer
+
+// chemical info
+int species = 1  // If there is species involved. 0 - Air as perfect gas; 1 - Species involved; 2 - Species + mixture fraction + mixture fraction variance are solved
+int reaction = 1 //0-No reaction; 1-Finite rate chemistry; 2-Flamelet model. Even no reactions are involved, the mechanism file should exit to clarify the species
+string mechanism_file = chemistry/combustion_mechanism_H2.inp  // 2004-Li-IntJ.Chem.Kinet.inp 
+
+struct constVolumeReactor {
+    int file_frequency = 5000  // frequency of output files
+    int screen_frequency = 5000 // frequency of screen output
+
+    real dt = 1e-8              // time step
+    int advance_scheme = 1      // 0 - 1st-order explicit; 1 -rok4e without arnoldi; 3 - rk3
+    int implicit_method = 1     // 0 - Explicit; 1 - EPI; 2 - DA
+
+    // if use ROK4E, choose the following
+    int build_arnoldi = 0      // 0 - do not build arnoldi; 1 - build arnoldi
+    int adaptive_time_step = 1 // 0 - fixed time step; 1 - adaptive time step
+    real RTol = 1e-6
+    real ATol = 1e-12
+
+    int mechanism = 0  // 0 - Read the file; 1 - H2 mechanism hard-coded
+
+    int mole_mass = 1  // 0 - use mass fraction; 1 - use mole fraction
+
+    int conserve_mass_corefl = 1  // 0 - do not conserve mass, 1 - conserve mass using the COREFL method
+
+    real initial_temperature = 1000
+    real initial_pressure = 202650
+    real H2 = 0.295775
+    real O2 = 0.147887
+    real N2 = 0.556338
+    real end_time = 0.0012
+}

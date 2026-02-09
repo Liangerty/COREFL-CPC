@@ -1,0 +1,89 @@
+bool parallel = 0      // specify the mode of computation. 0 - serial, 1 - parallel.
+
+string canonical_problem = general     // The type of the problem. Generally, use "general", other choices include jicf, mixingLayer
+
+// Grid info
+real gridScale = 1    // grid scale(m)
+int gridIsBinary = 1
+int symmetric_conservative_metric = 0 // If we compute the metric and jacobian with a symmetric conservative form. 0-No, 2-2nd order, 4-4th order, 6-6th order
+
+// controls
+int initial = 0      // 0 - new case, 1 - continue from a previous case.
+int total_step = 1000000  // total number of steps
+int output_file = 100000  // frequency of output files
+int output_screen = 1000 // frequency of screen output
+int output_time_series = 1000
+// numerics
+// temporal scheme
+bool steady = 0                         // 0 - unsteady, 1 - steady
+int	 temporal_scheme = 4                // Temporal scheme for transient sims: 2-Dual-time iteration with DPLUR; 3-SSPRK; 4-Operator Splitting
+bool fixed_time_step   = 1              // If the time step is fixed(1), then the time step should be given; otherwise(0), the time step is determined by CFL number.
+real dt = 1e-8                          // In unsteady simulation, the time step should be given
+real total_simulation_time = 2.31e-4   // In unsteady simulation, how long physical time to be simulated L/u
+
+// spatial discretization
+int inviscid_scheme = 72               // 2 - Roe, 3 - AUSM+, 4 - HLLC, 51 - WENOZ5-cp, 52 - WENOZ5-ch
+int viscous_order = 0                   // Default: 2nd order central discretization. Other choices: 0(inviscid)
+
+// chemical info
+int species = 1  // If there is species involved. 0 - Air as perfect gas; 1 - Species involved
+int reaction = 1 //0-No reaction; 1-Finite rate chemistry. Even no reactions are involved, the mechanism file should exit to clarify the species
+int hardCodedMech = 0 // 0 - read mechanism file; 1 - hard coded mechanism (only for H2/air, li, 2004, 9s19r)
+string mechanism_file = chemistry/H2_mech-PREMIX.inp
+
+// turbulent sim info
+bool turbulence = 0 // 0 - laminar/DNS, 1 - turbulent
+
+// bc info
+array string boundary_conditions {
+ outflow wall
+}
+string  reference_state =   left  // Specify the reference state for the simulation. The reference state is used to calculate the stagnation enthalpy and the stagnation pressure.
+string default_init = left
+struct  left {
+    string  type            =   inflow
+    int     label           =   5
+    int     inflow_type     =   0   // 0 for constant inflow, 1 for profile inflow, 2 for mixing-layer-type inflow, other types may be added(such as 3 for self-similar inflow)
+    real    density         =   0.072
+    real    velocity        =   0
+    real    pressure        =   7173
+    real    u               =   1
+    real    v               =   0
+    real    w               =   0
+    real    H2              =   0.012772428
+    real    O2              =   0.101362139
+    real    AR              =   0.885865433
+}
+struct  right {
+    string  type            =   inflow
+    int     label           =   5
+    int     inflow_type     =   0   // 0 for constant inflow, 1 for profile inflow, 2 for mixing-layer-type inflow, other types may be added(such as 3 for self-similar inflow)
+    real    density         =   0.18075
+    real    velocity        =   487.34
+    real    pressure        =   35594
+    real    u               =   -1
+    real    v               =   0
+    real    w               =   0
+    real    H2              =   0.012772428
+    real    O2              =   0.101362139
+    real    AR              =   0.885865433
+}
+struct outflow {
+    string type = outflow
+    int label   =   6
+}
+struct wall {
+    string type = symmetry  // The slip wall is treated as a symmetry boundary condition.
+    int label = 2
+}
+
+int groups_init = 2
+struct init_cond_0 {
+	real x0 = 0.06
+	real x1 = 0.15
+	real y0 = -1
+	real y1 = 1
+	real z0 = -2
+	real z1 = 2
+	string name = right
+}

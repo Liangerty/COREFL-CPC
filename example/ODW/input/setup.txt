@@ -1,0 +1,68 @@
+bool parallel = 1      // specify the mode of computation. 0 - serial, 1 - parallel.
+
+string canonical_problem = general     // The type of the problem. Generally, use "general", other choices include jicf, mixingLayer
+
+// Grid info
+real gridScale = 1    // grid scale(m)
+int gridIsBinary = 1
+int symmetric_conservative_metric = 0 // If we compute the metric and jacobian with a symmetric conservative form. 0-No, 2-2nd order, 4-4th order, 6-6th order
+
+// controls
+int initial = 0      // 0 - new case, 1 - continue from a previous case.
+int total_step = 100000  // total number of steps
+int output_file = 2000  // frequency of output files
+int output_screen = 200 // frequency of screen output
+int output_time_series = 1000
+// numerics
+// temporal scheme
+bool steady = 0                         // 0 - unsteady, 1 - steady
+real cfl = 0.8                          // CFL number
+int     implicit_method = 0         // How to implicitly treat the ODE. 0 - Explicit integration; 1 - DPLUR
+
+int	 temporal_scheme = 4                // Temporal scheme for transient sims: 2-Dual-time iteration with DPLUR; 3-SSPRK
+bool fixed_time_step   = 0              // If the time step is fixed(1), then the time step should be given; otherwise(0), the time step is determined by CFL number.
+real dt = 1e-9                          // In unsteady simulation, the time step should be given
+real     n_flowThroughTime = 10              // The number of flow-through time for the unsteady simulation
+real    domain_length   = 0.024            // The length of the domain in the x direction, which is used to compute the flow-through time
+
+// spatial discretization
+int inviscid_scheme = 72               // 2 - Roe, 3 - AUSM+, 4 - HLLC, 51 - WENOZ5-cp, 52 - WENOZ5-ch
+int viscous_order = 0                   // Default: 2nd order central discretization. Other choices: 0(inviscid)
+
+// chemical info
+int species = 1  // If there is species involved. 0 - Air as perfect gas; 1 - Species involved
+int reaction = 1 //0-No reaction; 1-Finite rate chemistry. Even no reactions are involved, the mechanism file should exit to clarify the species
+int hardCodedMech = 2 // 0 - read mechanism file; 1 - hard coded mechanism (only for H2/air, li, 2004, 9s19r)
+string mechanism_file = chemistry/2011-Burke-Int.J.Chem-simp.inp  // H2_mech_mixing	H2_mech-PREMIX	2004-Li-IntJ.Chem.Kinet
+int chem_advance_method = 0 // 0 - Explicit; 1 - Point implicit; 2 - HCST(only hydrogen fuel is supported); 3-RK3
+
+// turbulent sim info
+bool turbulence = 0 // 0 - laminar/DNS, 1 - turbulent
+
+// bc info
+array string boundary_conditions {
+ freestream outflow symmetry
+}
+string  reference_state =   freestream // Specify the reference state for the simulation. The reference state is used to calculate the stagnation enthalpy and the stagnation pressure.
+string default_init = freestream 
+struct  freestream {
+    string  type        =   inflow
+    int     label       =   5
+    real    mach        =   3.643
+    real    temperature =   814.4
+    real    pressure    =   196300
+    real    u           =   0.945519
+    real    v           =   -0.325568
+    real    w           =   0
+    real    H2          =   0.028522
+    real    O2          =   0.226354
+    real    N2          =   0.745124
+}
+struct outflow {
+    string type = outflow
+    int label   =   6
+}
+struct symmetry {
+    string type = symmetry
+    int label = 3
+}

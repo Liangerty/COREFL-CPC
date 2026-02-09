@@ -1,0 +1,83 @@
+bool parallel = 0      // specify the mode of computation. 0 - serial, 1 - parallel.
+
+// The type of the problem. Generally, use "general", other choices include jicf, mixingLayer
+// The type of the problem.
+// For a common CFD problem, use "general"
+// Other choices include:
+// "jicf" - jet in cross flow problem. This choice will let you introduce several jets at the wall with specified conditions.
+// "mixingLayer" - mixing layer problem. This choice will let you specify the upper and lower stream conditions.
+// "constVolumeReactor" - constant volume reactor problem. This choice will let you simulate a constant volume reactor.
+// "sinWaveProp"
+string canonical_problem = general
+
+// Grid info
+real gridScale = 1                      // grid scale(m)
+int gridIsBinary = 1                    // 0 - ASCII grid file, 1 - binary grid file
+int symmetric_conservative_metric = 0   // If we compute the metric and jacobian with a symmetric conservative form. 0-No, 2-2nd order, 4-4th order, 6-6th order
+
+// controls
+int initial = 0      // -1 - user defined initial condition, 0 - new case, 1 - continue from a previous case.
+int total_step = 100000  // total number of steps
+int output_file = 10000  // frequency of output files
+int output_screen = 1000 // frequency of screen output
+int output_time_series = 1000
+
+// numerics
+// temporal scheme
+bool steady = 0                         // 0 - unsteady, 1 - steady
+real cfl = 0.1                          // CFL number
+int	 temporal_scheme = 3                // Temporal scheme for transient sims: 2-Dual-time iteration with DPLUR; 3-SSPRK3; 4-Operator splitting of Wu.
+bool fixed_time_step = 1              // If the time step is fixed(1), then the time step should be given; otherwise(0), the time step is determined by CFL number.
+real dt = 1e-4                         // In unsteady simulation, the time step should be given
+real total_simulation_time = 0.2               // The number of flow-through time for the unsteady simulation
+
+// spatial discretization
+// string hybrid_inviscid_scheme = UD7+WENO7	// UD7+WENO7
+int inviscid_scheme = 72              // 2 - Roe, 3 - AUSM+, 4 - HLLC, 51 - WENOZ5-cp, 52 - WENOZ5-ch
+bool positive_preserving = 0           // If the Positive-preserving limiter is activated, only implemented for 51/52
+int viscous_order = 0                   // Default: 2nd order central discretization. Other choices: 0(inviscid)
+int shock_sensor = 1                     // 0 - Modified Ducros sensor; 1 - Modified Jameson sensor; 2 - Sensor based on density and pressure jump
+real shockSensor_threshold = 0       // The threshold for the shock sensor
+real shockSensor_epsilon = 5.938329e+12 // The epsilon for the shock sensor, usually computed by (U_ref/L_ref)^2
+
+// bc info
+array string boundary_conditions {
+    outflow
+}
+struct outflow {
+    string type = outflow
+    int label   =   6
+}
+
+// initial condition
+string default_init = left
+string reference_state = left
+struct  left {
+    string  type            =   inflow
+    int     label           =   5
+    real    velocity        =   0
+    real    pressure        =   1
+    real    density         =   1
+}
+struct  right {
+    string  type        =   inflow
+    int     label       =   5
+    real    density     =   0.125
+    real    velocity    =   0
+    real    pressure    =   0.1
+}
+
+int groups_init = 2
+struct init_cond_0 {
+	real x0 = 0.5
+	real x1 = 1.5
+	real y0 = -10
+	real y1 = 10
+	real z0 = -2
+	real z1 = 2
+	string name = right
+}
+
+array string available_field_var {
+ shocksensor
+}

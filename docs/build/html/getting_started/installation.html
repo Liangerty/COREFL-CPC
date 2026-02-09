@@ -1,0 +1,178 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compilation &mdash; COREFL 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Run a case" href="running.html" />
+    <link rel="prev" title="Structure of COREFL folder" href="folder_struct.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            COREFL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Getting Started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="folder_struct.html">Structure of COREFL folder</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Run a case</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User’s guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/directory_layout.html">Directory layout</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Cases</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cases/1-SODShockTube.html">SOD Shock Tube</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../models/governing_equations.html">Governing equations</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../numerics/index.html">Numerical methods</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../numerics/curvilinear_coordinates.html">Curvilinear Coordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numerics/inviscid_flux.html">Inviscid Flux</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../reference/citations.html">Citation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/bibliography.html">Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/changelog.html">Change log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/license.html">License</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">COREFL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Getting Started</a></li>
+      <li class="breadcrumb-item active">Compilation</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/Liangerty/COREFL-CPC/blob/main/docs/source/getting_started/installation.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="compilation">
+<h1>Compilation<a class="headerlink" href="#compilation" title="Link to this heading"></a></h1>
+<p>To compile COREFL, an environment with the following compilers is required:</p>
+<ul class="simple">
+<li><p><strong>CUDA compiler</strong>: supporting C++17 (nvcc &gt; 11.0)</p></li>
+<li><p><strong>C++ compiler</strong>: supporting C++20</p></li>
+<li><p><strong>MPI library</strong>: supporting CUDA-aware MPI (E.g., OpenMPI &gt; 1.8)</p></li>
+<li><p><strong>CMake</strong>: supporting CUDA language</p></li>
+</ul>
+<blockquote>
+<div><p>Comments on the MPI library: Only a few vendors’ MPI support CUDA-aware MPI, and only on Linux systems. Therefore, only Linux system supports the parallel running of COREFL. However, any MPI version supports the compilation and running in serial modes.</p>
+</div></blockquote>
+<p>COREFL has been compiled and tested on Nvidia A100 GPU.
+The most frequently used configuration by us on A100 is given for reference:
+<strong>CUDA 11.8 / gcc 11.3 / openmpi 4.1.5 / cmake 3.26.3</strong></p>
+<p>All compilations are performed on <strong>Linux</strong> system. For Windows system, we successfully built the code with Visual Studio 2022 and CUDA, Microsoft MPI. You can also build it with CLion, but the toolchain must be the msvc instead of mingw. I would not include that here because large scale computations are always performed on Linux clusters.</p>
+<p>The compilation consists of the following steps:</p>
+<ol class="arabic simple">
+<li><p>Navigate to the COREFL folder (the “<code class="docutils literal notranslate"><span class="pre">code</span></code>” folder here).</p></li>
+<li><p>Modify the CMakeLists.txt:</p>
+<ol class="arabic simple">
+<li><p>Modify the number in <code class="docutils literal notranslate"><span class="pre">set(CMAKE_CUDA_ARCHITECTURES</span> <span class="pre">60)</span></code> according to the GPU compute capability. For example, this number is 60 for P100, 70 for V100, and 80 for A100.</p></li>
+<li><p>Modify <code class="docutils literal notranslate"><span class="pre">add_compile_definitions(MAX_SPEC_NUMBER=9)</span></code> according to the problem. The number should be larger than or equal to the species number to be used in computations. If no species is included, set it to 1.</p></li>
+<li><p>Modify <code class="docutils literal notranslate"><span class="pre">add_compile_definitions(MAX_REAC_NUMBER=19)</span></code> according to the problem. The number should be larger than or equal to the reaction number to be used in computations. If no reaction is included, set it to 1.</p></li>
+<li><p>Modify <code class="docutils literal notranslate"><span class="pre">add_compile_definitions(Combustion2Part)</span></code> according to the problem. If a general chemical reaction case is considered (combustion), set it to <code class="docutils literal notranslate"><span class="pre">Combustion2Part</span></code>. If a high-temerature air chemistry is to be simulated, set to <code class="docutils literal notranslate"><span class="pre">HighTempMultiPart</span></code>. Only the 5 species 6 reactions mechanism of air is supported currently when using <code class="docutils literal notranslate"><span class="pre">HighTempMultiPart</span></code>.</p></li>
+</ol>
+</li>
+<li><p>Load the compilation environment. For example, <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span> <span class="pre">mpi/openmpi4.1.5-gcc11.3.0-cuda11.8-ucx1.12.1</span> <span class="pre">cmake/3.26.3</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">-Bbuild</span> <span class="pre">-DCMAKE_BUILD_TYPE=Release</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">--build</span> <span class="pre">build</span> <span class="pre">--parallel</span> <span class="pre">16</span></code></p></li>
+</ol>
+<p>The executable COREFL should appear in ths current folder.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="folder_struct.html" class="btn btn-neutral float-left" title="Structure of COREFL folder" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="running.html" class="btn btn-neutral float-right" title="Run a case" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Xinliang Guo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

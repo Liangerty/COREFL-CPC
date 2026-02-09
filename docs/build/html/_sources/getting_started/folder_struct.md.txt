@@ -1,0 +1,16 @@
+# Structure of COREFL folder
+
+The structure of the current COREFL folder is:
+
+- code/
+  - docs/*
+  - example/*
+  - src/
+    - gxl_lib/*
+    - stat_lib/*
+    - *
+  - tools/*
+  - CMakeLists.txt
+- readGrid/*
+
+The `code` folder contains the COREFL codes, documentations, example cases, and some tools can be used. The `readGrid` folder contains a tool used for reading structured grid generated from Gridgen / Pointwise in Plot3D format. The concrete usage of them will be discussed throughout the documentation.

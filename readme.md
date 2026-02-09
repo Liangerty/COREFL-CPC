@@ -2,18 +2,18 @@
 
 COREFL performs direct numerical simulations of compressible reactive flows on GPU based on finite difference method.
 
+The docs are under construction at https://corefl.readthedocs.io/en/latest/, and the current readme is just a brief introduction to the code, including the environment requirements, compilation, and running. A simple example case is also included to illustrate the usage of the code.
+
 ## Environment requirements
 
 - **CUDA compiler**: supporting C++17 (nvcc > 11.0)
 - **C++ compiler**: supporting C++20
 - **MPI library**: supporting CUDA-aware MPI (E.g., OpenMPI > 1.8)
 - **CMake**: supporting CUDA language
-- **fmtlib** of C++
 
 comments on the environments:
 
-1. MPI: Only a few vendors' MPI support CUDA-aware MPI, and only on Linux systems. Therefore, only Linux system supports the parallel running of COREFL. However, any MPI version supports the compilation and running in serial modes.
-2. fmt: This is a lib for outputting information from CPU, not GPU. In future releases, this would be get rid of. For now, you may need to compile the fmt lib by yourself according to the following instructions.
+- MPI: Only a few vendors' MPI support CUDA-aware MPI, and only on Linux systems. Therefore, only Linux system supports the parallel running of COREFL. However, any MPI version supports the compilation and running in serial modes.
 
 COREFL has been compiled and tested on Nvidia A100 GPU.
 The most frequently used configuration by us on A100 is given for reference:
@@ -23,44 +23,29 @@ The most frequently used configuration by us on A100 is given for reference:
 
 All compilations are performed on **Linux** system. For Windows system, we successfully built the code with Visual Studio 2022 and CUDA, Microsoft MPI. You can also build it with CLion, but the toolchain must be the msvc instead of mingw. I would not include that here because large scale computations are always performed on Linux clusters.
 
-The structure of the current folder is:
+The structure of the current COREFL folder is:
 
-- case/*
-- code/
-  - depends/
-    - include/
-      - fmt/*
-    - lib/
-      - debug/*
-      - release/*
-  - src/
-    - gxl_lib/*
-    - stat_lib/*
-    - *
-  - CMakeLists.txt
-- readGrid/*
+- docs/*
+- example/*
+- src/
+  - gxl_lib/*
+  - stat_lib/*
+  - *.cpp/.h/.cuh/.cu/.hpp
+- tools/*
+- CMakeLists.txt
 
-### The compilation of *fmtlib*
-
-We need the fmtlib to be compiled first.
-
-1. Download the fmt zip file from <https://github.com/fmtlib/fmt/releases>. For example, <https://github.com/fmtlib/fmt/releases/download/11.2.0/fmt-11.2.0.zip>.
-2. Put it on the target platform and unzip.
-3. In the command line, navigate to the unzipped folder containing them. Load the corresponding environment variables for running COREFL. For example, in our system, we use `module load mpi/openmpi4.1.5-gcc11.3.0-cuda11.8-ucx1.12.1 cmake/3.26.3` to load the compilers.
-4. `cmake -Bbuild -DCMAKE_BUILD_TYPE=Release` The `build` after -B is the build folder containing build info. And the CMAKE_BUILD_TYPE must be specified. Therefore, we strongly advise you to use exactly this instruction.
-5. `cmake --build build --parallel 16` The `build` after `--build` is the build folder created above. `16` is the number of threads used to compile the code.
-6. After the build, there will be a `libfmt.a` file in the build folder. Copy and replace the fmtlib.a in our folder, whose path is gibven by `depends/lib/release/libfmt.a`.
-7. The included files should also be kept consistent. Copy and replace all files from `./include/fmt/*` to the folder in COREFL `<coreflFolder>/depends/include/fmt/*`.
-
-Now we have finished compiling fmt, which should be used for running COREFL.
+The folder contains the COREFL codes, documentations, example cases, and some tools can be used. The concrete usage of them will be discussed throughout the documentation.
 
 ### The compilation of COREFL
+
+The compilation consists of the following steps:
 
 1. Navigate to the COREFL folder (the "`code`" folder here).
 2. Modify the CMakeLists.txt:
    1. Modify the number in `set(CMAKE_CUDA_ARCHITECTURES 60)` according to the GPU compute capability. For example, this number is 60 for P100, 70 for V100, and 80 for A100.
    2. Modify `add_compile_definitions(MAX_SPEC_NUMBER=9)` according to the problem. The number should be larger than or equal to the species number to be used in computations. If no species is included, set it to 1.
    3. Modify `add_compile_definitions(MAX_REAC_NUMBER=19)` according to the problem. The number should be larger than or equal to the reaction number to be used in computations. If no reaction is included, set it to 1.
+   4. Modify `add_compile_definitions(Combustion2Part)` according to the problem. If a general chemical reaction case is considered (combustion), set it to `Combustion2Part`. If a high-temerature air chemistry is to be simulated, set to `HighTempMultiPart`. Only the 5 species 6 reactions mechanism of air is supported currently when using `HighTempMultiPart`.
 3. Load the compilation environment. For example, `module load mpi/openmpi4.1.5-gcc11.3.0-cuda11.8-ucx1.12.1 cmake/3.26.3`
 4. `cmake -Bbuild -DCMAKE_BUILD_TYPE=Release`
 5. `cmake --build build --parallel 16`

@@ -1,0 +1,193 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Use readGrid to prepare the grid file &mdash; COREFL 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="User’s guide" href="../user_guide/index.html" />
+    <link rel="prev" title="Run a case" href="running.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            COREFL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Getting Started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="folder_struct.html">Structure of COREFL folder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html">Compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Run a case</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Use <strong>readGrid</strong> to prepare the grid file</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#about-the-readgrid-tool">About the <strong>readGrid</strong> tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#use-readgrid">Use <strong>readGrid</strong></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User’s guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/directory_layout.html">Directory layout</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Cases</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cases/1-SODShockTube.html">SOD Shock Tube</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../models/governing_equations.html">Governing equations</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../numerics/index.html">Numerical methods</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../numerics/curvilinear_coordinates.html">Curvilinear Coordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numerics/inviscid_flux.html">Inviscid Flux</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../reference/citations.html">Citation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/bibliography.html">Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/changelog.html">Change log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/license.html">License</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">COREFL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Getting Started</a></li>
+      <li class="breadcrumb-item active">Use <strong>readGrid</strong> to prepare the grid file</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/Liangerty/COREFL-CPC/blob/main/docs/source/getting_started/readGrid.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="use-readgrid-to-prepare-the-grid-file">
+<h1>Use <strong>readGrid</strong> to prepare the grid file<a class="headerlink" href="#use-readgrid-to-prepare-the-grid-file" title="Link to this heading"></a></h1>
+<section id="about-the-readgrid-tool">
+<h2>About the <strong>readGrid</strong> tool<a class="headerlink" href="#about-the-readgrid-tool" title="Link to this heading"></a></h2>
+<p>COREFL needs to read the computational mesh in a fixed format, and <strong>readGrid</strong> supplies such function. By reading a mesh given in <code class="docutils literal notranslate"><span class="pre">Plot3D</span></code> format, it generates the files for the simulation.</p>
+<p>The <strong>readGrid</strong> tool will read the “<code class="docutils literal notranslate"><span class="pre">gridFile.dat</span></code>” and “<code class="docutils literal notranslate"><span class="pre">gridFile.inp</span></code>”, where “<code class="docutils literal notranslate"><span class="pre">gridFile</span></code>” is the filename, and output two folders <code class="docutils literal notranslate"><span class="pre">grid</span></code> and <code class="docutils literal notranslate"><span class="pre">boundary_condition</span></code>, which should be moved to the <code class="docutils literal notranslate"><span class="pre">input</span></code> folder and read by COREFL.</p>
+<p>The advantage of using such a file is that the corresponding processes need only read their own blocks instead of waiting for asigning. But this may be improved or integrated in COREFL in the future.</p>
+<p>The tool is in the folder <strong>readGrid</strong>. The compilation is straightforward and is omitted here. This code can be compiled on Windows systems. A pre-compiled executable is also given in the folder if anyone uses this tool on Windows before uploading the grid to linux clusters (which is what we do).</p>
+</section>
+<section id="use-readgrid">
+<h2>Use <strong>readGrid</strong><a class="headerlink" href="#use-readgrid" title="Link to this heading"></a></h2>
+<p>The grid for COREFL is structured grid in <code class="docutils literal notranslate"><span class="pre">Plot3D</span></code> format. The <code class="docutils literal notranslate"><span class="pre">Plot3D</span></code> files including <code class="docutils literal notranslate"><span class="pre">name.dat</span></code> and <code class="docutils literal notranslate"><span class="pre">name.inp</span></code> contain the grid coordinates and boundary condition information, respectively.</p>
+<blockquote>
+<div><p>You can generate the grid with a commercial software supporting <code class="docutils literal notranslate"><span class="pre">Plot3D</span></code> or by writing codes. For example, <strong>Pointwise</strong> and <strong>Gridgen</strong> both support this file format. In <strong>Pointwise</strong>, you choose the solver “Gridgen Generic”, and by exporting CAE, you get those two files.</p>
+</div></blockquote>
+<blockquote>
+<div><p>Note that, we do not have automatic blocking in COREFL. You need to partition the blocks manually when generating grid in softwares if a parallel computation is needed.</p>
+</div></blockquote>
+<p>The tool gets the information from a file named <code class="docutils literal notranslate"><span class="pre">input.txt</span></code>, where we need to put the following info into it:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Gridgen(0) or Pointwise(1)</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">GridgenOrPointwise</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="c1">// Dimension</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">dimension</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="c1">// grid file name</span>
+<span class="n">string</span><span class="w"> </span><span class="n">gridFile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">combustor</span><span class="p">.</span><span class="n">dat</span>
+<span class="c1">// boundary file name</span>
+<span class="n">string</span><span class="w"> </span><span class="n">boundaryFile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">combustor</span><span class="p">.</span><span class="n">inp</span>
+<span class="c1">// number of processors to use</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">n_proc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="c1">// if the grid is in ASCII(0) or in binary(1) form</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">isBinary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="c1">// if we write the grid in ASCII(0) or in binary(1) form</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">writeBinary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="c1">// If 2D, set all Z values to the given value</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">setZ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="n">real</span><span class="w"> </span><span class="n">zValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span>
+</pre></div>
+</div>
+<p>With the two files, the tool <strong>readGrid</strong> would generate two folders called <code class="docutils literal notranslate"><span class="pre">grid</span></code> and <code class="docutils literal notranslate"><span class="pre">boundary_condition</span></code>, these should be put into the <code class="docutils literal notranslate"><span class="pre">input</span></code> folder in the work directory.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="running.html" class="btn btn-neutral float-left" title="Run a case" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../user_guide/index.html" class="btn btn-neutral float-right" title="User’s guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Xinliang Guo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

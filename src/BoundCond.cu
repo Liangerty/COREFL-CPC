@@ -1949,7 +1949,8 @@ void write_rng(const Mesh &mesh, Parameter &parameter, std::vector<Field> &field
   if (n_rand < 1)
     return;
   const int myid = parameter.get_int("myid");
-  printf("Process %d is writing the white noise to the file.\n", myid);
+  if (myid == 0)
+    printf("Writing the white noise to the file.\n");
 
   auto err = cudaGetLastError();
   if (err != cudaSuccess) {
@@ -2111,13 +2112,11 @@ template<MixtureModel mix_model> __global__ void apply_outflow(DZone *zone, Outf
           p1{bv(i1, j1, k1, 4)};
 
       gamma = gamma_air;
-      real yk1[MAX_SPEC_NUMBER];
       if constexpr (mix_model != MixtureModel::Air) {
         real cpk[MAX_SPEC_NUMBER];
         compute_cp(bv(i1, j1, k1, 5), cpk, param);
         real cp = 0, R = 0;
         for (int l = 0; l < param->n_spec; ++l) {
-          yk1[l] = sv(i1, j1, k1, l);
           cp += sv(i1, j1, k1, l) * cpk[l];
           R += sv(i1, j1, k1, l) * param->gas_const[l];
         }
@@ -2129,11 +2128,6 @@ template<MixtureModel mix_model> __global__ void apply_outflow(DZone *zone, Outf
       u_b = u1 - nx * temp / d1;
       v_b = v1 - ny * temp / d1;
       w_b = w1 - nz * temp / d1;
-      if constexpr (mix_model != MixtureModel::Air) {
-        for (int l = 0; l < param->n_spec; ++l) {
-          yk_b[l] = yk1[l] + yk1[l] * temp / (d1 * c1);
-        }
-      }
 
       for (int g = 1; g <= ngg; ++g) {
         const int gi{i + g * dir[0]}, gj{j + g * dir[1]}, gk{k + g * dir[2]};
@@ -2146,9 +2140,18 @@ template<MixtureModel mix_model> __global__ void apply_outflow(DZone *zone, Outf
         bv(gi, gj, gk, 2) = 2 * v_b - bv(ii, ij, ik, 2);
         bv(gi, gj, gk, 3) = 2 * w_b - bv(ii, ij, ik, 3);
         bv(gi, gj, gk, 4) = p_g;
-        bv(gi, gj, gk, 5) = p_g / (rho_g * R_air);
-        for (int l = 0; l < param->n_scalar; ++l) {
-          sv(gi, gj, gk, l) = sv(i, j, k, l);
+        // bv(gi, gj, gk, 5) = p_g / (rho_g * R_air);
+        for (int l = 0; l < param->n_spec; ++l) {
+          sv(gi, gj, gk, l) = 2 * yk_b[l] - sv(ii, ij, ik, l);
+        }
+        if constexpr (mix_model != MixtureModel::Air) {
+          real R = 0;
+          for (int l = 0; l < param->n_spec; ++l) {
+            R += sv(gi, gj, gk, l) * param->gas_const[l];
+          }
+          bv(gi, gj, gk, 5) = p_g / (rho_g * R);
+        } else {
+          bv(gi, gj, gk, 5) = p_g / (rho_g * R_air);
         }
 
         compute_cv_from_bv_1_point<mix_model>(zone, param, gi, gj, gk);
@@ -2162,7 +2165,7 @@ template<MixtureModel mix_model> __global__ void apply_outflow(DZone *zone, Outf
         bv(gi, gj, gk, 2) = v_b;
         bv(gi, gj, gk, 3) = w_b;
         bv(gi, gj, gk, 4) = p_b;
-        bv(gi, gj, gk, 5) = p_b / (rho_b * R_air);
+        bv(gi, gj, gk, 5) = bv(i, j, k, 5);
         for (int l = 0; l < param->n_scalar; ++l) {
           sv(gi, gj, gk, l) = sv(i, j, k, l);
         }
@@ -2214,17 +2217,77 @@ template<MixtureModel mix_model> __global__ void apply_inflow(DZone *zone, Inflo
     const auto &prof = profile_d_ptr[inflow->profile_idx];
     int idx[3] = {i, j, k};
     idx[b.face] = 0;
-    // idx[b.face] = b.direction == 1 ? 0 : ngg;
 
-    density = prof(idx[0], idx[1], idx[2], 0);
-    u = prof(idx[0], idx[1], idx[2], 1);
-    v = prof(idx[0], idx[1], idx[2], 2);
-    w = prof(idx[0], idx[1], idx[2], 3);
-    p = prof(idx[0], idx[1], idx[2], 4);
-    T = prof(idx[0], idx[1], idx[2], 5);
-    for (int l = 0; l < n_scalar; ++l) {
-      sv_b[l] = prof(idx[0], idx[1], idx[2], 6 + l);
+    if (inflow->inflow_sub) {
+      real nx{zone->metric(i, j, k, b.face * 3)},
+          ny{zone->metric(i, j, k, b.face * 3 + 1)},
+          nz{zone->metric(i, j, k, b.face * 3 + 2)};
+      const real grad_n_inv = b.direction / sqrt(nx * nx + ny * ny + nz * nz);
+      nx *= grad_n_inv;
+      ny *= grad_n_inv;
+      nz *= grad_n_inv;
+
+      real c0{0};
+      if constexpr (mix_model != MixtureModel::Air) {
+        c0 = zone->acoustic_speed(i, j, k);
+      } else {
+        c0 = sqrt(gamma_air * R_air * bv(i, j, k, 5));
+      }
+      if (const real Mn = (bv(i, j, k, 1) * nx + bv(i, j, k, 2) * ny + bv(i, j, k, 3) * nz) / c0; Mn < -1.0) {
+        density = prof(idx[0], idx[1], idx[2], 0);
+        u = prof(idx[0], idx[1], idx[2], 1);
+        v = prof(idx[0], idx[1], idx[2], 2);
+        w = prof(idx[0], idx[1], idx[2], 3);
+        p = prof(idx[0], idx[1], idx[2], 4);
+        T = prof(idx[0], idx[1], idx[2], 5);
+        for (int l = 0; l < n_scalar; ++l) {
+          sv_b[l] = prof(idx[0], idx[1], idx[2], 6 + l);
+        }
+      } else {
+        // subsonic inflow
+        int i1 = i - dir[0], j1 = j - dir[1], k1 = k - dir[2];
+        real c1{0};
+        if constexpr (mix_model != MixtureModel::Air) {
+          c1 = zone->acoustic_speed(i1, j1, k1);
+        } else {
+          c1 = sqrt(gamma_air * R_air * bv(i1, j1, k1, 5));
+        }
+        real rho1 = bv(i1, j1, k1, 0), p1 = bv(i1, j1, k1, 4);
+        const real p_in = prof(idx[0], idx[1], idx[2], 4);
+        p = 0.5 * (p1 + p_in
+                   - rho1 * c1 * ((prof(idx[0], idx[1], idx[2], 1) - bv(i1, j1, k1, 1)) * nx +
+                                  (prof(idx[0], idx[1], idx[2], 2) - bv(i1, j1, k1, 2)) * ny +
+                                  (prof(idx[0], idx[1], idx[2], 3) - bv(i1, j1, k1, 3)) * nz));
+        density = prof(idx[0], idx[1], idx[2], 0) + (p - p_in) / (c1 * c1);
+        u = prof(idx[0], idx[1], idx[2], 1) - (p - p_in) / (rho1 * c1) * nx;
+        v = prof(idx[0], idx[1], idx[2], 2) - (p - p_in) / (rho1 * c1) * ny;
+        w = prof(idx[0], idx[1], idx[2], 3) - (p - p_in) / (rho1 * c1) * nz;
+        for (int l = 0; l < n_scalar; ++l) {
+          sv_b[l] = prof(idx[0], idx[1], idx[2], 6 + l);
+        }
+
+        real R = 0;
+        if constexpr (mix_model != MixtureModel::Air) {
+          for (int l = 0; l < param->n_spec; ++l) {
+            R += sv_b[l] * param->gas_const[l];
+          }
+        } else {
+          R = R_air;
+        }
+        T = p / (density * R);
+      }
+    } else {
+      density = prof(idx[0], idx[1], idx[2], 0);
+      u = prof(idx[0], idx[1], idx[2], 1);
+      v = prof(idx[0], idx[1], idx[2], 2);
+      w = prof(idx[0], idx[1], idx[2], 3);
+      p = prof(idx[0], idx[1], idx[2], 4);
+      T = prof(idx[0], idx[1], idx[2], 5);
+      for (int l = 0; l < n_scalar; ++l) {
+        sv_b[l] = prof(idx[0], idx[1], idx[2], 6 + l);
+      }
     }
+
     vel = sqrt(u * u + v * v + w * w);
 
     real bv_fluc_real[6], bv_fluc_imag[6];
@@ -2313,46 +2376,70 @@ template<MixtureModel mix_model> __global__ void apply_inflow(DZone *zone, Inflo
       const int gi{i + g * dir[0]}, gj{j + g * dir[1]}, gk{k + g * dir[2]};
       idx[0] = gi, idx[1] = gj, idx[2] = gk;
       idx[b.face] = -g;
-      // idx[b.face] = b.direction == 1 ? g : ngg - g;
-
-      density = prof(idx[0], idx[1], idx[2], 0);
-      u = prof(idx[0], idx[1], idx[2], 1) + uf;
-      v = prof(idx[0], idx[1], idx[2], 2) + vf;
-      w = prof(idx[0], idx[1], idx[2], 3) + wf;
-      p = prof(idx[0], idx[1], idx[2], 4);
-      T = prof(idx[0], idx[1], idx[2], 5);
       for (int l = 0; l < n_scalar; ++l) {
         sv_b[l] = prof(idx[0], idx[1], idx[2], 6 + l);
       }
-      vel = sqrt(u * u + v * v + w * w);
 
-      if (inflow->fluctuation_type == 2) {
-        // LST fluctuation
-        // int idx_fluc[3]{i, j, k};
-        // idx_fluc[b.face] = 0;
+      if (inflow->inflow_sub) {
+        const int ii{i - g * dir[0]}, ij{j - g * dir[1]}, ik{k - g * dir[2]};
 
-        real x = zone->x(gi, gj, gk), z = zone->z(gi, gj, gk);
+        real rho2 = 2 * density - bv(ii, ij, ik, 0);
+        real p2 = 2 * p - bv(ii, ij, ik, 4);
 
-        real A0 = inflow->fluctuation_intensity;
-        real omega = 2.0 * pi * inflow->fluctuation_frequency;
-        real alpha = 2.0 * pi / inflow->streamwise_wavelength;
-        real beta = 2.0 * pi / inflow->spanwise_wavelength;
-        real t = param->physical_time;
-        real phi = alpha * x - omega * t;
-        density += A0 * (bv_fluc_real[0] * cos(phi) - bv_fluc_imag[0] * sin(phi)) * cos(beta * z) * param->rho_ref;
-        u += A0 * (bv_fluc_real[1] * cos(phi) - bv_fluc_imag[1] * sin(phi)) * cos(beta * z) * param->v_ref;
-        v += A0 * (bv_fluc_real[2] * cos(phi) - bv_fluc_imag[2] * sin(phi)) * cos(beta * z) * param->v_ref;
-        w += A0 * (bv_fluc_real[3] * cos(phi) - bv_fluc_imag[3] * sin(phi)) * cos(beta * z) * param->v_ref;
-        T += A0 * (bv_fluc_real[5] * cos(phi) - bv_fluc_imag[5] * sin(phi)) * cos(beta * z) * param->T_ref;
-        p = density * R_u / mw_air * T;
+        if (p2 <= 0.1 * p) p2 = 0.1 * p;                 // avoid negative pressure
+        if (rho2 <= 0.1 * density) rho2 = 0.1 * density; // avoid negative density
+
+        bv(gi, gj, gk, 0) = rho2;
+        bv(gi, gj, gk, 1) = 2 * u - bv(ii, ij, ik, 1) + uf;
+        bv(gi, gj, gk, 2) = 2 * v - bv(ii, ij, ik, 2) + vf;
+        bv(gi, gj, gk, 3) = 2 * w - bv(ii, ij, ik, 3) + wf;
+        bv(gi, gj, gk, 4) = p2;
+        if constexpr (mix_model != MixtureModel::Air) {
+          real R = 0;
+          for (int l = 0; l < param->n_spec; ++l) {
+            R += sv_b[l] * param->gas_const[l];
+          }
+          bv(gi, gj, gk, 5) = p2 / (rho2 * R);
+        } else {
+          bv(gi, gj, gk, 5) = p2 / (rho2 * R_air);
+        }
+      } else {
+        density = prof(idx[0], idx[1], idx[2], 0);
+        u = prof(idx[0], idx[1], idx[2], 1) + uf;
+        v = prof(idx[0], idx[1], idx[2], 2) + vf;
+        w = prof(idx[0], idx[1], idx[2], 3) + wf;
+        p = prof(idx[0], idx[1], idx[2], 4);
+        T = prof(idx[0], idx[1], idx[2], 5);
+        vel = sqrt(u * u + v * v + w * w);
+
+        if (inflow->fluctuation_type == 2) {
+          // LST fluctuation
+          // int idx_fluc[3]{i, j, k};
+          // idx_fluc[b.face] = 0;
+
+          real x = zone->x(gi, gj, gk), z = zone->z(gi, gj, gk);
+
+          real A0 = inflow->fluctuation_intensity;
+          real omega = 2.0 * pi * inflow->fluctuation_frequency;
+          real alpha = 2.0 * pi / inflow->streamwise_wavelength;
+          real beta = 2.0 * pi / inflow->spanwise_wavelength;
+          real t = param->physical_time;
+          real phi = alpha * x - omega * t;
+          density += A0 * (bv_fluc_real[0] * cos(phi) - bv_fluc_imag[0] * sin(phi)) * cos(beta * z) * param->rho_ref;
+          u += A0 * (bv_fluc_real[1] * cos(phi) - bv_fluc_imag[1] * sin(phi)) * cos(beta * z) * param->v_ref;
+          v += A0 * (bv_fluc_real[2] * cos(phi) - bv_fluc_imag[2] * sin(phi)) * cos(beta * z) * param->v_ref;
+          w += A0 * (bv_fluc_real[3] * cos(phi) - bv_fluc_imag[3] * sin(phi)) * cos(beta * z) * param->v_ref;
+          T += A0 * (bv_fluc_real[5] * cos(phi) - bv_fluc_imag[5] * sin(phi)) * cos(beta * z) * param->T_ref;
+          p = density * R_u / mw_air * T;
+        }
+
+        bv(gi, gj, gk, 0) = density;
+        bv(gi, gj, gk, 1) = u;
+        bv(gi, gj, gk, 2) = v;
+        bv(gi, gj, gk, 3) = w;
+        bv(gi, gj, gk, 4) = p;
+        bv(gi, gj, gk, 5) = T;
       }
-
-      bv(gi, gj, gk, 0) = density;
-      bv(gi, gj, gk, 1) = u;
-      bv(gi, gj, gk, 2) = v;
-      bv(gi, gj, gk, 3) = w;
-      bv(gi, gj, gk, 4) = p;
-      bv(gi, gj, gk, 5) = T;
       for (int l = 0; l < n_scalar; ++l) {
         sv(gi, gj, gk, l) = sv_b[l];
       }
@@ -2565,7 +2652,7 @@ template<MixtureModel mix_model> __global__ void apply_inflow(DZone *zone, Inflo
       if (rho2 <= 0.1 * density) rho2 = 0.1 * density; // avoid negative density
 
       bv(gi, gj, gk, 0) = rho2;
-      bv(gi, gj, gk, 1) = 2 * u - bv(ii, ij, ik, 1);;
+      bv(gi, gj, gk, 1) = 2 * u - bv(ii, ij, ik, 1);
       bv(gi, gj, gk, 2) = 2 * v - bv(ii, ij, ik, 2);
       bv(gi, gj, gk, 3) = 2 * w - bv(ii, ij, ik, 3);
       bv(gi, gj, gk, 4) = p2;

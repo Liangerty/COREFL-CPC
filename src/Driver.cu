@@ -147,6 +147,21 @@ template<MixtureModel mix_model> void Driver<mix_model>::initialize_computation(
     }
   }
 
+  // 0: Compute the physical properties based on the initialized basic variables, some bc needs the values.
+  // The ghost grids do not contain correct values, which will be updated again after bc is applied.
+  for (auto b = 0; b < mesh.n_block; ++b) {
+    const int mx{mesh[b].mx}, my{mesh[b].my}, mz{mesh[b].mz};
+    dim3 bpg{(mx + ng_1) / tpb.x + 1, (my + ng_1) / tpb.y + 1, (mz + ng_1) / tpb.z + 1};
+    update_physical_properties<mix_model><<<bpg, tpb>>>(field[b].d_ptr, param);
+  }
+  cudaDeviceSynchronize();
+  MpiParallel::barrier();
+  auto err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("Error in proc %d after updating physical properties: %s\n", myid, cudaGetErrorString(err));
+    MpiParallel::exit();
+  }
+
   // First, apply boundary conditions to all boundaries; all ghost grids will have reasonable values.
   for (int b = 0; b < mesh.n_block; ++b) {
     bound_cond.apply_boundary_conditions<mix_model>(mesh[b], field[b], param, 0);
@@ -155,7 +170,7 @@ template<MixtureModel mix_model> void Driver<mix_model>::initialize_computation(
   if (myid == 0)
     printf("\tBoundary conditions are applied successfully for initialization\n");
   cudaDeviceSynchronize();
-  auto err = cudaGetLastError();
+  err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("Error in proc %d after apply_boundary_conditions: %s\n", myid, cudaGetErrorString(err));
     MpiParallel::exit();
@@ -186,7 +201,7 @@ template<MixtureModel mix_model> void Driver<mix_model>::initialize_computation(
   MpiParallel::barrier();
   err = cudaGetLastError();
   if (err != cudaSuccess) {
-    printf("Error in proc %d after data_communication: %s\n", myid, cudaGetErrorString(err));
+    printf("Error in proc %d after updating physical properties: %s\n", myid, cudaGetErrorString(err));
     MpiParallel::exit();
   }
   MPI_Barrier(MPI_COMM_WORLD);
@@ -196,8 +211,8 @@ template<MixtureModel mix_model> void Driver<mix_model>::initialize_computation(
 }
 
 // template<MixtureModel mix_model> void Driver<mix_model>::manage_output(int step, real physical_time,
-  // std::vector<Field> &field) {
-  // io_manager.manage_output(step, physical_time, field, parameter.get_bool("steady") == 0);
+// std::vector<Field> &field) {
+// io_manager.manage_output(step, physical_time, field, parameter.get_bool("steady") == 0);
 // }
 
 __global__ void compute_wall_distance(const real *wall_point_coor, DZone *zone, int n_point_times3) {

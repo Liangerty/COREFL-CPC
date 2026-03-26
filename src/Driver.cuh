@@ -8,7 +8,6 @@
 #include "Field.h"
 #include "BoundCond.cuh"
 #include "IOManager.h"
-#include "SinglePointStat.cuh"
 
 namespace cfd {
 

@@ -4,6 +4,7 @@
 #include "MixtureFraction.h"
 #include "Parallel.h"
 #include <random>
+#include <algorithm>
 
 cfd::Inflow::Inflow(const std::string &inflow_name, Species &spec, Parameter &parameter) {
   auto &info = parameter.get_struct(inflow_name);

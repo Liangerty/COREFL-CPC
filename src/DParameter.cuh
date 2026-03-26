@@ -77,14 +77,14 @@ struct DParameter {
   real *imw = nullptr;       // Inverse molecular weight
   real *gas_const = nullptr; // Gas constant for each species
   int nasa_7_or_9 = 7;
-  #ifdef HighTempMultiPart
+  // #ifdef HighTempMultiPart
   int *n_temperature_range = nullptr;
   ggxl::MatrixDyn<real> temperature_cuts;
   ggxl::Array3D<real> therm_poly_coeff;
-  #else
+  // #else
   ggxl::MatrixDyn<real> high_temp_coeff, low_temp_coeff;
   real *t_low = nullptr, *t_mid = nullptr, *t_high = nullptr;
-  #endif
+  // #endif
 
   // Transport properties
   real *geometry = nullptr;

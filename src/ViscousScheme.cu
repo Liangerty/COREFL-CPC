@@ -256,14 +256,14 @@ template<int ORDER> __device__ real d_dZeta(const ggxl::VectorField3D<real> &f, 
         df = -25.0 / 12 * f(i, j, k, l) + 4.0 * f(i, j, k + 1, l) - 3 * f(i, j, k + 2, l) + 4.0 / 3 * f(i, j, k + 3, l)
              - 0.25 * f(i, j, k + 4, l);
         computed = true;
-      } else if (j == 1) {
+      } else if (k == 1) {
         df = -0.25 * f(i, j, k - 1, l) - 5.0 / 6 * f(i, j, k, l) + 1.5 * f(i, j, k + 1, l) - 0.5 * f(i, j, k + 2, l) +
              1.0 / 12 * f(i, j, k + 3, l);
         computed = true;
-      } else if (j == 2) {
+      } else if (k == 2) {
         df = -1.0 / 12 * (f(i, j, k + 2, l) - f(i, j, k - 2, l)) + 2.0 / 3 * (f(i, j, k + 1, l) - f(i, j, k - 1, l));
         computed = true;
-      } else if (j == 3) {
+      } else if (k == 3) {
         df = 0.75 * (f(i, j, k + 1, l) - f(i, j, k - 1, l)) - 0.15 * (f(i, j, k + 2, l) - f(i, j, k - 2, l))
              + 1.0 / 60 * (f(i, j, k + 3, l) - f(i, j, k - 3, l));
         computed = true;

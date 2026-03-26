@@ -9,9 +9,7 @@
 #include "Fluctuation.cuh"
 #include "Parallel.h"
 #include "IOManager.h"
-#include "Monitor.cuh"
 #include "Residual.cuh"
-#include "PostProcess.h"
 
 namespace cfd {
 template<MixtureModel mix_model> void compute_cn(std::vector<Field> &field, DParameter *param, Parameter &parameter,
@@ -396,30 +394,30 @@ __global__ void wu_reaction_step(DZone *zone, const DParameter *param, real dt) 
   const int n_sub = static_cast<int>(dt / reaction_timescale);
   real dt_reaction = dt / (n_sub + 1);
 
-  real t_curr = 0;
-  // auto &timeScale = zone->reaction_timeScale(i, j, k);
-  real timeScale{1};
-  while (t_curr < dt) {
-    const real dt_step = min(dt_reaction, dt - t_curr);
+  // real t_curr = 0;
+  // // auto &timeScale = zone->reaction_timeScale(i, j, k);
+  // real timeScale{1};
+  // while (t_curr < dt) {
+  //   const real dt_step = min(dt_reaction, dt - t_curr);
+  //   wu_zeroDReaction(param, dt_reaction, zone, Cn, CnY, timeScale, i, j, k);
+  //   if (timeScale > 1e-12 && timeScale < 1) {
+  //     dt_reaction = timeScale;
+  //   }
+  //   t_curr += dt_step;
+  // }
+  // if ((timeScale > 1e-12) && (timeScale < 1))
+  //   zone->reaction_timeScale(i, j, k) = timeScale;
+
+  // The first n_sub steps are advanced with a fixed dt
+  auto &timeScale = zone->reaction_timeScale(i, j, k);
+  for (int n = 0; n < n_sub; ++n) {
     wu_zeroDReaction(param, dt_reaction, zone, Cn, CnY, timeScale, i, j, k);
-    if (timeScale > 1e-12 && timeScale < 1) {
-      dt_reaction = timeScale;
-    }
-    t_curr += dt_step;
   }
-  if ((timeScale > 1e-12) && (timeScale < 1))
-    zone->reaction_timeScale(i, j, k) = timeScale;
-  //
-  // // The first n_sub steps are advanced with a fixed dt
-  // auto &timeScale = zone->reaction_timeScale(i, j, k);
-  // for (int n = 0; n < n_sub; ++n) {
-  //   wu_zeroDReaction(param, dt_reaction, zone, Cn, CnY, timeScale, i, j, k);
-  // }
-  // // To make the time interval consistent with dt, the last step is advanced with dt_flow - n_sub * dt_reaction
-  // dt_reaction = dt - dt_reaction * n_sub;
-  // if (abs(dt_reaction) > 1e-15) {
-  //   wu_zeroDReaction(param, dt_reaction, zone, Cn, CnY, timeScale, i, j, k);
-  // }
+  // To make the time interval consistent with dt, the last step is advanced with dt_flow - n_sub * dt_reaction
+  dt_reaction = dt - dt_reaction * n_sub;
+  if (abs(dt_reaction) > 1e-12) {
+    wu_zeroDReaction(param, dt_reaction, zone, Cn, CnY, timeScale, i, j, k);
+  }
 }
 
 __global__ void wu_reaction_step_hardCoded1(DZone *zone, const DParameter *param, real dt) {
@@ -446,21 +444,32 @@ __global__ void wu_reaction_step_hardCoded1(DZone *zone, const DParameter *param
   const int n_sub = static_cast<int>(dt / reaction_timescale);
   real dt_reaction = dt / (n_sub + 1);
 
-  real t_curr = 0;
-  // auto &timeScale = zone->reaction_timeScale(i, j, k);
-  real timeScale{1};
+  // The first n_sub steps are advanced with a fixed dt
+  auto &timeScale = zone->reaction_timeScale(i, j, k);
   const int mech = param->hardCodedMech;
-  while (t_curr < dt) {
-    const real dt_step = min(dt_reaction, dt - t_curr);
-    wu_zeroDReaction_hardCoded_H2_9s(param, dt_step, zone, Cn, CnY, timeScale, i, j, k, mech);
-    // if ((timeScale > 1e-12) && (timeScale < 1)) {
-    if (timeScale > 1e-12) {
-      dt_reaction = timeScale;
-    }
-    t_curr += dt_step;
+  for (int n = 0; n < n_sub; ++n) {
+    wu_zeroDReaction_hardCoded_H2_9s(param, dt_reaction, zone, Cn, CnY, timeScale, i, j, k, mech);
   }
-  // if ((timeScale > 1e-12) && (timeScale < 1))
-    zone->reaction_timeScale(i, j, k) = timeScale;
+  // To make the time interval consistent with dt, the last step is advanced with dt_flow - n_sub * dt_reaction
+  dt_reaction = dt - dt_reaction * n_sub;
+  if (abs(dt_reaction) > 1e-12) {
+    wu_zeroDReaction_hardCoded_H2_9s(param, dt_reaction, zone, Cn, CnY, timeScale, i, j, k, mech);
+  }
+
+  // real t_curr = 0;
+  // // auto &timeScale = zone->reaction_timeScale(i, j, k);
+  // real timeScale{1};
+  // while (t_curr < dt) {
+  //   const real dt_step = min(dt_reaction, dt - t_curr);
+  //   wu_zeroDReaction_hardCoded_H2_9s(param, dt_step, zone, Cn, CnY, timeScale, i, j, k, mech);
+  //   // if ((timeScale > 1e-12) && (timeScale < 1)) {
+  //   if (timeScale > 1e-12) {
+  //     dt_reaction = timeScale;
+  //   }
+  //   t_curr += dt_step;
+  // }
+  // // if ((timeScale > 1e-12) && (timeScale < 1))
+  //   zone->reaction_timeScale(i, j, k) = timeScale;
 }
 
 template<MixtureModel mix_model> void wu_reaction_subStep(std::vector<Field> &field, DParameter *param,

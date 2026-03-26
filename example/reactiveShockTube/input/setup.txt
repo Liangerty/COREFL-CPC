@@ -18,7 +18,7 @@ int output_time_series = 1000
 bool steady = 0                         // 0 - unsteady, 1 - steady
 int	 temporal_scheme = 4                // Temporal scheme for transient sims: 2-Dual-time iteration with DPLUR; 3-SSPRK; 4-Operator Splitting
 bool fixed_time_step   = 1              // If the time step is fixed(1), then the time step should be given; otherwise(0), the time step is determined by CFL number.
-real dt = 1e-8                          // In unsteady simulation, the time step should be given
+real dt = 1e-9                         // In unsteady simulation, the time step should be given
 real total_simulation_time = 2.31e-4   // In unsteady simulation, how long physical time to be simulated L/u
 
 // spatial discretization

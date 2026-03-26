@@ -31,42 +31,52 @@ cfd::Field::Field(Parameter &parameter, const Block &block_in) :
   fluc_val.resize(mx, my, mz, parameter.get_int("fluctuation_variable_number"), ngg);
 
   // Statistical data
-  collect_reynolds_1st.resize(
-    mx, my, mz, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 1);
-  collect_favre_1st.resize(mx, my, mz, parameter.get_int("n_stat_favre_1st"), 1);
-  collect_reynolds_2nd.resize(mx, my, mz, parameter.get_int("n_stat_reynolds_2nd"), 1);
-  collect_favre_2nd.resize(mx, my, mz, parameter.get_int("n_stat_favre_2nd"), 1);
-  if (parameter.get_bool("output_statistics_plt")) {
-    if (parameter.get_bool("perform_spanwise_average")) {
-      stat_reynolds_1st.resize(mx, my, 1, parameter.get_int("n_stat_reynolds_1st"), 0);
+  const bool perform_spanwise_average = parameter.get_bool("perform_spanwise_average");
+  if (perform_spanwise_average) {
+    collect_reynolds_1st.resize(
+      mx, my, 1, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 1);
+    collect_favre_1st.resize(mx, my, 1, parameter.get_int("n_stat_favre_1st"), 1);
+    collect_reynolds_2nd.resize(mx, my, 1, parameter.get_int("n_stat_reynolds_2nd"), 1);
+    collect_favre_2nd.resize(mx, my, 1, parameter.get_int("n_stat_favre_2nd"), 1);
+    if (parameter.get_bool("output_statistics_plt")) {
+      stat_reynolds_1st.resize(
+        mx, my, 1, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 0);
       stat_favre_1st.resize(mx, my, 1, parameter.get_int("n_stat_favre_1st"), 0);
       stat_reynolds_2nd.resize(mx, my, 1, parameter.get_int("n_stat_reynolds_2nd"), 0);
       stat_favre_2nd.resize(mx, my, 1, parameter.get_int("n_stat_favre_2nd"), 0);
-    } else {
+    }
+  } else {
+    collect_reynolds_1st.resize(
+      mx, my, mz, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 1);
+    collect_favre_1st.resize(mx, my, mz, parameter.get_int("n_stat_favre_1st"), 1);
+    collect_reynolds_2nd.resize(mx, my, mz, parameter.get_int("n_stat_reynolds_2nd"), 1);
+    collect_favre_2nd.resize(mx, my, mz, parameter.get_int("n_stat_favre_2nd"), 1);
+    if (parameter.get_bool("output_statistics_plt")) {
       stat_reynolds_1st.resize(mx, my, mz, parameter.get_int("n_stat_reynolds_1st"), 1);
       stat_favre_1st.resize(mx, my, mz, parameter.get_int("n_stat_favre_1st"), 1);
       stat_reynolds_2nd.resize(mx, my, mz, parameter.get_int("n_stat_reynolds_2nd"), 1);
       stat_favre_2nd.resize(mx, my, mz, parameter.get_int("n_stat_favre_2nd"), 1);
     }
-  }
-  // other statistics
-  if (parameter.get_bool("stat_tke_budget")) {
-    collect_tke_budget.resize(mx, my, mz, TkeBudget::n_collect, TkeBudget::ngg);
-  }
-  const int n_species_stat = parameter.get_int("n_species_stat");
-  const int n_ps = parameter.get_int("n_ps");
-  const int n_scalar_stat = n_species_stat + n_ps;
-  if (n_scalar_stat > 0) {
-    if (parameter.get_bool("stat_scalar_fluc_budget")) {
-      collect_scalar_budget.resize(mx, my, mz, n_scalar_stat * ScalarFlucBudget::n_collect, ScalarFlucBudget::ngg);
+
+    // other statistics
+    if (parameter.get_bool("stat_tke_budget")) {
+      collect_tke_budget.resize(mx, my, mz, TkeBudget::n_collect, TkeBudget::ngg);
     }
-    if (parameter.get_bool("stat_species_velocity_correlation")) {
-      collect_scalar_vel_correlation.resize(mx, my, mz, n_scalar_stat * ScalarVelocityCorrelation::n_collect,
-                                            ScalarVelocityCorrelation::ngg);
-    }
-    if (parameter.get_bool("stat_species_dissipation_rate")) {
-      collect_scalar_budget.resize(mx, my, mz, n_scalar_stat * ScalarDissipationRate::n_collect,
-                                   ScalarDissipationRate::ngg);
+    const int n_species_stat = parameter.get_int("n_species_stat");
+    const int n_ps = parameter.get_int("n_ps");
+    const int n_scalar_stat = n_species_stat + n_ps;
+    if (n_scalar_stat > 0) {
+      if (parameter.get_bool("stat_scalar_fluc_budget")) {
+        collect_scalar_budget.resize(mx, my, mz, n_scalar_stat * ScalarFlucBudget::n_collect, ScalarFlucBudget::ngg);
+      }
+      if (parameter.get_bool("stat_species_velocity_correlation")) {
+        collect_scalar_vel_correlation.resize(mx, my, mz, n_scalar_stat * ScalarVelocityCorrelation::n_collect,
+                                              ScalarVelocityCorrelation::ngg);
+      }
+      if (parameter.get_bool("stat_species_dissipation_rate")) {
+        collect_scalar_budget.resize(mx, my, mz, n_scalar_stat * ScalarDissipationRate::n_collect,
+                                     ScalarDissipationRate::ngg);
+      }
     }
   }
 
@@ -567,33 +577,51 @@ void cfd::Field::setup_device_memory(const Parameter &parameter) {
   h_ptr->fluc_val.allocate_memory(mx, my, mz, parameter.get_int("fluctuation_variable_number"), ngg);
 
   // The collected data includes one layer of ghost mesh, which may be used to compute the gradients.
-  h_ptr->collect_reynolds_1st.allocate_memory(
-    mx, my, mz, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 1);
-  h_ptr->collect_favre_1st.allocate_memory(mx, my, mz, parameter.get_int("n_stat_favre_1st"), 1);
-  if (parameter.get_bool("if_collect_2nd_moments")) {
-    h_ptr->collect_reynolds_2nd.allocate_memory(mx, my, mz, parameter.get_int("n_stat_reynolds_2nd"), 1);
-    h_ptr->collect_favre_2nd.allocate_memory(mx, my, mz, parameter.get_int("n_stat_favre_2nd"), 1);
-  }
+  const auto perform_spanwise_average = parameter.get_bool("perform_spanwise_average");
+  if (perform_spanwise_average) {
+    h_ptr->collect_reynolds_1st.allocate_memory(
+      mx, my, 1, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 1);
+    h_ptr->collect_favre_1st.allocate_memory(mx, my, 1, parameter.get_int("n_stat_favre_1st"), 1);
+    if (parameter.get_bool("if_collect_2nd_moments")) {
+      h_ptr->collect_reynolds_2nd.allocate_memory(mx, my, 1, parameter.get_int("n_stat_reynolds_2nd"), 1);
+      h_ptr->collect_favre_2nd.allocate_memory(mx, my, 1, parameter.get_int("n_stat_favre_2nd"), 1);
+    }
+    if (parameter.get_bool("output_statistics_plt")) {
+      h_ptr->stat_reynolds_1st.allocate_memory(
+        mx, my, 1, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 0);
+      h_ptr->stat_favre_1st.allocate_memory(mx, my, 1, parameter.get_int("n_stat_favre_1st"), 0);
+      h_ptr->stat_reynolds_2nd.allocate_memory(mx, my, 1, parameter.get_int("n_stat_reynolds_2nd"), 0);
+      h_ptr->stat_favre_2nd.allocate_memory(mx, my, 1, parameter.get_int("n_stat_favre_2nd"), 0);
+    }
+  } else {
+    h_ptr->collect_reynolds_1st.allocate_memory(
+      mx, my, mz, parameter.get_int("n_stat_reynolds_1st") + parameter.get_int("n_stat_reynolds_1st_scalar"), 1);
+    h_ptr->collect_favre_1st.allocate_memory(mx, my, mz, parameter.get_int("n_stat_favre_1st"), 1);
+    if (parameter.get_bool("if_collect_2nd_moments")) {
+      h_ptr->collect_reynolds_2nd.allocate_memory(mx, my, mz, parameter.get_int("n_stat_reynolds_2nd"), 1);
+      h_ptr->collect_favre_2nd.allocate_memory(mx, my, mz, parameter.get_int("n_stat_favre_2nd"), 1);
+    }
 
-  // other statistics
-  if (parameter.get_bool("stat_tke_budget")) {
-    h_ptr->collect_tke_budget.allocate_memory(mx, my, mz, TkeBudget::n_collect, TkeBudget::ngg);
-  }
-  const int n_species_stat = parameter.get_int("n_species_stat");
-  const int n_ps = parameter.get_int("n_ps");
-  const int n_scalar_stat = n_species_stat + n_ps;
-  if (n_scalar_stat > 0) {
-    if (parameter.get_bool("stat_scalar_fluc_budget")) {
-      h_ptr->collect_scalar_budget.allocate_memory(mx, my, mz, ScalarFlucBudget::n_collect * n_scalar_stat,
-                                                   ScalarFlucBudget::ngg);
+    // other statistics
+    if (parameter.get_bool("stat_tke_budget")) {
+      h_ptr->collect_tke_budget.allocate_memory(mx, my, mz, TkeBudget::n_collect, TkeBudget::ngg);
     }
-    if (parameter.get_bool("stat_species_velocity_correlation")) {
-      h_ptr->collect_scalar_vel_correlation.allocate_memory(
-        mx, my, mz, ScalarVelocityCorrelation::n_collect * n_scalar_stat, ScalarVelocityCorrelation::ngg);
-    }
-    if (parameter.get_bool("stat_species_dissipation_rate")) {
-      h_ptr->collect_scalar_budget.allocate_memory(
-        mx, my, mz, ScalarDissipationRate::n_collect * n_scalar_stat, ScalarDissipationRate::ngg);
+    const int n_species_stat = parameter.get_int("n_species_stat");
+    const int n_ps = parameter.get_int("n_ps");
+    const int n_scalar_stat = n_species_stat + n_ps;
+    if (n_scalar_stat > 0) {
+      if (parameter.get_bool("stat_scalar_fluc_budget")) {
+        h_ptr->collect_scalar_budget.allocate_memory(mx, my, mz, ScalarFlucBudget::n_collect * n_scalar_stat,
+                                                     ScalarFlucBudget::ngg);
+      }
+      if (parameter.get_bool("stat_species_velocity_correlation")) {
+        h_ptr->collect_scalar_vel_correlation.allocate_memory(
+          mx, my, mz, ScalarVelocityCorrelation::n_collect * n_scalar_stat, ScalarVelocityCorrelation::ngg);
+      }
+      if (parameter.get_bool("stat_species_dissipation_rate")) {
+        h_ptr->collect_scalar_budget.allocate_memory(
+          mx, my, mz, ScalarDissipationRate::n_collect * n_scalar_stat, ScalarDissipationRate::ngg);
+      }
     }
   }
 

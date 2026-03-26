@@ -8,9 +8,13 @@
 namespace cfd {
 __global__ void collect_singlePointStat_1ghostLayer_Step1(DZone *zone, DParameter *param);
 
+__global__ void collect_singlePointStat_spanAvg_Step1(DZone *zone, DParameter *param);
+
 __global__ void collect_singlePointStat_1ghostLayer_Step2(DZone *zone, DParameter *param);
 
 __global__ void collect_single_point_additional_statistics(DZone *zone, DParameter *param);
+
+__global__ void compute_statistical_data_spanwise_average(DZone *zone, const DParameter *param, int N);
 
 class SinglePointStat {
 public:
@@ -21,9 +25,28 @@ public:
 
   void collect_data(DParameter *param);
 
-  void export_statistical_data();
+  void export_statistical_data(DParameter *param);
 
 private:
+  struct ThicknessRecord {
+    real x = 0;
+    real yc = 0;
+    real delta_theta = 0;
+    real delta_omega = 0;
+    real delta_vis = 0;
+  };
+
+  struct ThicknessReferenceState {
+    real u1 = 0;
+    real u2 = 0;
+    real rho_ref = 1;
+    real convective_velocity = 0;
+    real u11 = 0;
+    real u22 = 0;
+    real delta_u = 0;
+    bool upper_u_faster = true;
+  };
+
   int n_reyAve = 2;
   int n_reyAveScalar = 0;
   int n_favAve = 4;
@@ -65,9 +88,16 @@ private:
   const Mesh &mesh;
   std::vector<Field> &field;
   const Species &species;
+  bool perform_spanwise_average = false;
 
   MPI_Offset offset_unit[4] = {0, 0, 0, 0};
   std::vector<MPI_Datatype> ty_1gg, ty_0gg;
+
+  // plot-related variables
+  MPI_Offset offset_header{0};
+  int n_plot{0};
+  MPI_Offset *offset_minmax_var = nullptr;
+  MPI_Offset *offset_var = nullptr;
 
 public:
   std::vector<int> counter_rey1st;
@@ -80,5 +110,16 @@ private:
   void compute_offset_for_export_data();
 
   void read_previous_statistical_data();
+
+  void prepare_for_statistical_data_plot(const Species &species);
+
+  ThicknessReferenceState get_thickness_reference_state() const;
+
+  void compute_thickness_for_block(int blk, const ThicknessReferenceState &ref,
+                                   std::vector<ThicknessRecord> &records) const;
+
+  void write_thickness_file(const std::vector<ThicknessRecord> &local_records) const;
+
+  void plot_statistical_data(DParameter *param) const;
 };
 } // cfd

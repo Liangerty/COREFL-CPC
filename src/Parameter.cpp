@@ -358,6 +358,7 @@ void cfd::Parameter::setup_default_settings() {
   // If we conduct transient simulations, the following parameters are used by default.
   int_parameters["temporal_scheme"] = 3;      // RK3 is used by default
   bool_parameters["fixed_time_step"] = false; // The time step is computed with CFL condition.
+  real_parameters["cfl"] = 0.8;
   real_parameters["dt"] = 1e-8;
   real_parameters["n_flowThroughTime"] = -1;
   real_parameters["domain_length"] = 1.0;
@@ -498,6 +499,8 @@ void cfd::Parameter::setup_default_settings() {
   // stat control
   bool_parameters["if_collect_spec_favreAvg"] = true;
   bool_parameters["if_collect_2nd_moments"] = true;
+  bool_parameters["perform_spanwise_average"] = true;
+  bool_parameters["output_statistics_plt"] = false;
   string_array["stat_rey_1st"] = {};
   string_array["stat_species"] = {};
   bool_parameters["rho_p_correlation"] = false;

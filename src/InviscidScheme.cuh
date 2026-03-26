@@ -52,4 +52,6 @@ __device__ void positive_preserving_limiter_1(int dim, int n_var, const real *cv
 __device__ real WENO5(const real *vp, const real *vm, real eps, bool if_shock);
 
 __device__ real WENO7(const real *vp, const real *vm, real eps, bool if_shock);
+
+__device__ real WENO7_bound(const real *vp, const real *vm, real eps, bool if_shock, int left, int right, int max);
 } // cfd

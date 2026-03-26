@@ -5,6 +5,7 @@
 #include "Field.h"
 #include "Mesh.h"
 #include "ChemData.h"
+#include "UDIO.h"
 #include <filesystem>
 #include "gxl_lib/MyString.h"
 #include <fstream>
@@ -26,6 +27,12 @@ MPI_Offset write_dynamic_array(MPI_Offset offset, const Field &field, const MPI_
 
 template<MixtureModel mix_model, OutputTimeChoice output_time_choice = OutputTimeChoice::Instance>
 class FieldIO {
+  enum class PlaneType {
+    KMiddle,
+    JMiddle,
+    JZero,
+  };
+
   const int myid{0};
   const Mesh &mesh;
   std::vector<Field> &field;
@@ -54,6 +61,12 @@ private:
   void write_common_data_section();
 
   int32_t acquire_variable_names(std::vector<std::string> &var_name) const;
+
+  static void get_plane_size(int mx, int my, int mz, int ngg, PlaneType plane_type, int &ni, int &nj, int &nk);
+
+  void write_plane_fields(int step, real time) const;
+
+  void write_single_plane_file(const std::string &file_name, PlaneType plane_type, real time) const;
 };
 
 template<MixtureModel mix_model, OutputTimeChoice output_time_choice> FieldIO<
@@ -436,6 +449,263 @@ FieldIO<mix_model, output_time_choice>::acquire_variable_names(std::vector<std::
 }
 
 template<MixtureModel mix_model, OutputTimeChoice output_time_choice>
+void FieldIO<mix_model, output_time_choice>::get_plane_size(
+  int mx, int my, int mz, int ngg, PlaneType plane_type, int &ni, int &nj, int &nk) {
+  ni = mx + 2 * ngg;
+  if (plane_type == PlaneType::KMiddle) {
+    nj = my + 2 * ngg;
+    nk = 1;
+  } else {
+    nj = 1;
+    nk = mz + 2 * ngg;
+  }
+}
+
+template<MixtureModel mix_model, OutputTimeChoice output_time_choice>
+void FieldIO<mix_model, output_time_choice>::write_single_plane_file(
+  const std::string &file_name, PlaneType plane_type, real time) const {
+  const std::filesystem::path out_dir("output");
+  MPI_File fp;
+  MPI_File_open(
+    MPI_COMM_WORLD, (out_dir.string() + "/" + file_name).c_str(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
+  MPI_Status status;
+
+  auto var_name = parameter.get_string_array("var_name");
+  const int32_t n_var_plane = add_other_variable_name(var_name, parameter);
+  const int n_scalar = parameter.get_int("n_scalar");
+  const int n_other_var = parameter.get_int("n_other_var");
+
+  MPI_Offset offset_header_plane{0};
+  if (myid == 0) {
+    MPI_Offset offset{0};
+    constexpr auto magic_number{"#!TDV112"};
+    gxl::write_str_without_null(magic_number, fp, offset);
+
+    constexpr int32_t byte_order{1};
+    MPI_File_write_at(fp, offset, &byte_order, 1, MPI_INT32_T, &status);
+    offset += 4;
+
+    constexpr int32_t file_type{0};
+    MPI_File_write_at(fp, offset, &file_type, 1, MPI_INT32_T, &status);
+    offset += 4;
+
+    gxl::write_str("Solution file", fp, offset);
+    MPI_File_write_at(fp, offset, &n_var_plane, 1, MPI_INT32_T, &status);
+    offset += 4;
+    for (const auto &name: var_name) {
+      gxl::write_str(name.c_str(), fp, offset);
+    }
+
+    for (int blk = 0; blk < mesh.n_block_total; ++blk) {
+      constexpr float zone_marker{299.0f};
+      MPI_File_write_at(fp, offset, &zone_marker, 1, MPI_FLOAT, &status);
+      offset += 4;
+      gxl::write_str(("zone " + std::to_string(blk)).c_str(), fp, offset);
+
+      constexpr int32_t parent_zone{-1};
+      MPI_File_write_at(fp, offset, &parent_zone, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      constexpr int32_t strand_id{-2};
+      MPI_File_write_at(fp, offset, &strand_id, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      MPI_File_write_at(fp, offset, &time, 1, MPI_DOUBLE, &status);
+      offset += 8;
+
+      constexpr int32_t zone_color{-1};
+      MPI_File_write_at(fp, offset, &zone_color, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      constexpr int32_t zone_type{0};
+      MPI_File_write_at(fp, offset, &zone_type, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      constexpr int32_t var_location{0};
+      MPI_File_write_at(fp, offset, &var_location, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      constexpr int32_t raw_face_neighbor{0};
+      MPI_File_write_at(fp, offset, &raw_face_neighbor, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      constexpr int32_t miscellaneous_face{0};
+      MPI_File_write_at(fp, offset, &miscellaneous_face, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      int ni = 0, nj = 0, nk = 0;
+      get_plane_size(mesh.mx_blk[blk], mesh.my_blk[blk], mesh.mz_blk[blk], ngg_output, plane_type, ni, nj, nk);
+      MPI_File_write_at(fp, offset, &ni, 1, MPI_INT32_T, &status);
+      offset += 4;
+      MPI_File_write_at(fp, offset, &nj, 1, MPI_INT32_T, &status);
+      offset += 4;
+      MPI_File_write_at(fp, offset, &nk, 1, MPI_INT32_T, &status);
+      offset += 4;
+
+      constexpr int32_t no_more_auxi_data{0};
+      MPI_File_write_at(fp, offset, &no_more_auxi_data, 1, MPI_INT32_T, &status);
+      offset += 4;
+    }
+
+    constexpr float EOHMARKER{357.0f};
+    MPI_File_write_at(fp, offset, &EOHMARKER, 1, MPI_FLOAT, &status);
+    offset += 4;
+    offset_header_plane = offset;
+  }
+  MPI_Bcast(&offset_header_plane, 1, MPI_OFFSET, 0, MPI_COMM_WORLD);
+
+  MPI_Offset offset{offset_header_plane};
+  int global_start_blk{0};
+  for (int p = 0; p < myid; ++p) {
+    global_start_blk += mesh.nblk[p];
+  }
+  for (int blk = 0; blk < global_start_blk; ++blk) {
+    int ni = 0, nj = 0, nk = 0;
+    get_plane_size(mesh.mx_blk[blk], mesh.my_blk[blk], mesh.mz_blk[blk], ngg_output, plane_type, ni, nj, nk);
+    const auto n_node = static_cast<MPI_Offset>(ni) * nj * nk;
+    offset += 16 + 20 * n_var_plane + 8 * n_var_plane * n_node;
+  }
+
+  for (int blk = 0; blk < mesh.n_block; ++blk) {
+    auto &b = mesh[blk];
+    auto &v = field[blk];
+    int ni = 0, nj = 0, nk = 0;
+    get_plane_size(b.mx, b.my, b.mz, ngg_output, plane_type, ni, nj, nk);
+    const int plane_j = (plane_type == PlaneType::JMiddle) ? b.my / 2 : 0;
+    const int plane_k = b.mz / 2;
+    const auto n_node = static_cast<MPI_Offset>(ni) * nj * nk;
+
+    auto write_minmax = [&](const auto &value_getter) {
+      bool first_val = true;
+      double min_val{0}, max_val{0};
+      if (plane_type == PlaneType::KMiddle) {
+        for (int j = -ngg_output; j < b.my + ngg_output; ++j) {
+          for (int i = -ngg_output; i < b.mx + ngg_output; ++i) {
+            const double val = value_getter(i, j, plane_k);
+            if (first_val) {
+              min_val = val;
+              max_val = val;
+              first_val = false;
+            } else {
+              min_val = std::min(min_val, val);
+              max_val = std::max(max_val, val);
+            }
+          }
+        }
+      } else {
+        for (int k = -ngg_output; k < b.mz + ngg_output; ++k) {
+          for (int i = -ngg_output; i < b.mx + ngg_output; ++i) {
+            const double val = value_getter(i, plane_j, k);
+            if (first_val) {
+              min_val = val;
+              max_val = val;
+              first_val = false;
+            } else {
+              min_val = std::min(min_val, val);
+              max_val = std::max(max_val, val);
+            }
+          }
+        }
+      }
+      MPI_File_write_at(fp, offset, &min_val, 1, MPI_DOUBLE, &status);
+      offset += 8;
+      MPI_File_write_at(fp, offset, &max_val, 1, MPI_DOUBLE, &status);
+      offset += 8;
+    };
+
+    constexpr float zone_marker{299.0f};
+    MPI_File_write_at(fp, offset, &zone_marker, 1, MPI_FLOAT, &status);
+    offset += 4;
+
+    constexpr int32_t data_format{2};
+    for (int l = 0; l < n_var_plane; ++l) {
+      MPI_File_write_at(fp, offset, &data_format, 1, MPI_INT32_T, &status);
+      offset += 4;
+    }
+
+    constexpr int32_t passive_var{0};
+    MPI_File_write_at(fp, offset, &passive_var, 1, MPI_INT32_T, &status);
+    offset += 4;
+
+    constexpr int32_t shared_var{0};
+    MPI_File_write_at(fp, offset, &shared_var, 1, MPI_INT32_T, &status);
+    offset += 4;
+
+    constexpr int32_t shared_connect{-1};
+    MPI_File_write_at(fp, offset, &shared_connect, 1, MPI_INT32_T, &status);
+    offset += 4;
+
+    write_minmax([&](int i, int j, int k) { return b.x(i, j, k); });
+    write_minmax([&](int i, int j, int k) { return b.y(i, j, k); });
+    write_minmax([&](int i, int j, int k) { return b.z(i, j, k); });
+
+    for (int l = 0; l < UserDefineIO::n_static_auxiliary; ++l) {
+      write_minmax([&](int i, int j, int k) { return v.ov(i, j, k, l); });
+    }
+    for (int l = 0; l < 6; ++l) {
+      write_minmax([&](int i, int j, int k) { return v.bv(i, j, k, l); });
+    }
+    for (int l = 0; l < n_scalar; ++l) {
+      write_minmax([&](int i, int j, int k) { return v.sv(i, j, k, l); });
+    }
+    for (int l = 0; l < n_other_var; ++l) {
+      write_minmax([&](int i, int j, int k) { return v.ov(i, j, k, l); });
+    }
+    for (int l = 0; l < UserDefineIO::n_dynamic_auxiliary; ++l) {
+      write_minmax([&](int i, int j, int k) { return v.udv(i, j, k, l); });
+    }
+
+    MPI_Datatype ty;
+    int lsize[3]{ni, nj, nk};
+    int memsize[3]{b.mx + 2 * b.ngg, b.my + 2 * b.ngg, b.mz + 2 * b.ngg};
+    int start_idx[3]{b.ngg - ngg_output, b.ngg - ngg_output, b.ngg + plane_k};
+    if (plane_type != PlaneType::KMiddle) {
+      start_idx[1] = b.ngg + plane_j;
+      start_idx[2] = b.ngg - ngg_output;
+    }
+    MPI_Type_create_subarray(3, memsize, lsize, start_idx, MPI_ORDER_FORTRAN, MPI_DOUBLE, &ty);
+    MPI_Type_commit(&ty);
+
+    auto write_data = [&](const real *ptr) {
+      MPI_File_write_at(fp, offset, ptr, 1, ty, &status);
+      offset += 8 * n_node;
+    };
+
+    write_data(b.x.data());
+    write_data(b.y.data());
+    write_data(b.z.data());
+
+    for (int l = 0; l < UserDefineIO::n_static_auxiliary; ++l) {
+      write_data(v.ov[l]);
+    }
+    for (int l = 0; l < 6; ++l) {
+      write_data(v.bv[l]);
+    }
+    for (int l = 0; l < n_scalar; ++l) {
+      write_data(v.sv[l]);
+    }
+    for (int l = 0; l < n_other_var; ++l) {
+      write_data(v.ov[l]);
+    }
+    for (int l = 0; l < UserDefineIO::n_dynamic_auxiliary; ++l) {
+      write_data(v.udv[l]);
+    }
+    MPI_Type_free(&ty);
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_File_close(&fp);
+}
+
+template<MixtureModel mix_model, OutputTimeChoice output_time_choice>
+void FieldIO<mix_model, output_time_choice>::write_plane_fields(int step, real time) const {
+  (void)step;
+  write_single_plane_file("flowfield_k_mz2.plt", PlaneType::KMiddle, time);
+  write_single_plane_file("flowfield_j_ny2.plt", PlaneType::JMiddle, time);
+  write_single_plane_file("flowfield_j_0.plt", PlaneType::JZero, time);
+}
+
+template<MixtureModel mix_model, OutputTimeChoice output_time_choice>
 void FieldIO<mix_model, output_time_choice>::print_field(int step, real time) const {
   if (myid == 0) {
     std::ofstream file("output/message/step.txt");
@@ -551,6 +821,7 @@ void FieldIO<mix_model, output_time_choice>::print_field(int step, real time) co
     MPI_Type_free(&ty);
   }
   MPI_File_close(&fp);
+  write_plane_fields(step, time);
 }
 
 template<MixtureModel mix_model>

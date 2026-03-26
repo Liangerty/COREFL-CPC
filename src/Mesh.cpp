@@ -658,7 +658,7 @@ cfd::Mesh::Mesh(Parameter &parameter) :
     scale(grid_scale);
     MPI_Barrier(MPI_COMM_WORLD);
     if (myid == 0) {
-      printf("\t->-> %-20.6f : grid scale(meter).\n", grid_scale);
+      printf("\t->-> %-20.6e : grid scale(meter).\n", grid_scale);
     }
   }
 

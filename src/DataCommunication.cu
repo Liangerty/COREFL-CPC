@@ -320,7 +320,7 @@ __global__ void setup_data_to_be_sent(const DZone *zone, int i_face, real *data,
   }
 
   if (task == 1) {
-    const int n_var{param->n_var - 1}, ngg{zone->ngg};
+    const int n_var{param->n_var}, ngg{zone->ngg};
     const int bias_0 = 3 * n_var * (ngg + 1) * (n[f.loop_order[1]] * f.n_point[f.loop_order[2]] + n[f.loop_order[2]]);
 
     auto bias = bias_0;
@@ -370,7 +370,7 @@ __global__ void assign_data_received(DZone *zone, int i_face, const real *data, 
   idx[2] = f.range_start[2] + n[2] * f.loop_dir[2];
 
   if (task == 1) {
-    const int n_var{param->n_var - 1}, ngg{zone->ngg};
+    const int n_var{param->n_var}, ngg{zone->ngg};
     const int bias_0 = 3 * n_var * (ngg + 1) * (n[f.loop_order[1]] * f.n_point[f.loop_order[2]] + n[f.loop_order[2]]);
     int bias = bias_0;
     for (int l = 0; l < n_var; ++l) {

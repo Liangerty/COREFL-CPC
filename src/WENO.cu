@@ -155,7 +155,7 @@ __device__ void weno_ch_air_x(const DParameter *param, const real **shared_mem, 
     real max_lambda = 0;
     for (int m = 0; m < 6; ++m) {
       if (real lam = abs(F[0][baseP + m]) + F[5][baseP + m]; lam > max_lambda) {
-      // if (real lam = F[5][baseP + m]; lam > max_lambda) {
+        // if (real lam = F[5][baseP + m]; lam > max_lambda) {
         max_lambda = lam;
       }
     }
@@ -562,7 +562,7 @@ __device__ void weno_ch_air_yz(const DParameter *param, const real **shared_mem,
     real max_lambda = 0;
     for (int m = 0; m < 6; ++m) {
       if (real lam = abs(F[0][baseP + m][tx]) + F[5][baseP + m][tx]; lam > max_lambda) {
-      // if (real lam = F[5][baseP + m][tx]; lam > max_lambda) {
+        // if (real lam = F[5][baseP + m][tx]; lam > max_lambda) {
         max_lambda = lam;
       }
     }
@@ -847,6 +847,11 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_x(
   } else {
     if_shock = true;
   }
+  // int left_bound = -100, right_bound = -100;
+  // if (i < 3 && zone->bType_il(j, k) != 0)
+  //   left_bound = i;
+  // if (i > zone->mx - 5 && zone->bType_ir(j, k) != 0)
+  //   right_bound = i;
 
   extern __shared__ real s[];
 
@@ -875,9 +880,9 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_x(
   const real kyJ = zone->metric(i, j, k, 1) * jac_l + zone->metric(i + 1, j, k, 1) * jac_r;
   const real kzJ = zone->metric(i, j, k, 2) * jac_l + zone->metric(i + 1, j, k, 2) * jac_r;
   real eps_ref{0};
-  if (if_shock) {
-    eps_ref = eps_weno * param->weno_eps_scale * 0.25 * (kxJ * kxJ + kyJ * kyJ + kzJ * kzJ);
-  }
+  // if (if_shock) {
+  eps_ref = eps_weno * param->weno_eps_scale; // * 0.25 * (kxJ * kxJ + kyJ * kyJ + kzJ * kzJ);
+  // }
   real kx = 0.5 * (zone->metric(i, j, k, 0) + zone->metric(i + 1, j, k, 0));
   real ky = 0.5 * (zone->metric(i, j, k, 1) + zone->metric(i + 1, j, k, 1));
   real kz = 0.5 * (zone->metric(i, j, k, 2) + zone->metric(i + 1, j, k, 2));
@@ -964,6 +969,7 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_x(
         vm[5] = fm[l][i_shared + 3];
         vm[6] = fm[l][i_shared + 4];
 
+        // fc(i, j, k, l) = WENO7_bound(vp, vm, eps_here, if_shock, left_bound, right_bound, zone->mx);
         fc(i, j, k, l) = WENO7(vp, vm, eps_here, if_shock);
       } else if (param->inviscid_scheme == 51) {
         real vp[5], vm[5];
@@ -1582,6 +1588,11 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_y(
   } else {
     if_shock = true;
   }
+  // int left_bound = -100, right_bound = -100;
+  // if (j < 3 && zone->bType_jl(i, k) != 0)
+  //   left_bound = j;
+  // if (j > zone->my - 5 && zone->bType_jr(i, k) != 0)
+  //   right_bound = j;
 
   extern __shared__ real s[];
 
@@ -1610,9 +1621,9 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_y(
   const real kyJ = zone->metric(i, j, k, 4) * jac_l + zone->metric(i, j + 1, k, 4) * jac_r;
   const real kzJ = zone->metric(i, j, k, 5) * jac_l + zone->metric(i, j + 1, k, 5) * jac_r;
   real eps_ref{0};
-  if (if_shock) {
-    eps_ref = eps_weno * param->weno_eps_scale * 0.25 * (kxJ * kxJ + kyJ * kyJ + kzJ * kzJ);
-  }
+  // if (if_shock) {
+  eps_ref = eps_weno * param->weno_eps_scale; // * 0.25 * (kxJ * kxJ + kyJ * kyJ + kzJ * kzJ);
+  // }
   real kx = 0.5 * (zone->metric(i, j, k, 3) + zone->metric(i + 1, j, k, 3));
   real ky = 0.5 * (zone->metric(i, j, k, 4) + zone->metric(i + 1, j, k, 4));
   real kz = 0.5 * (zone->metric(i, j, k, 5) + zone->metric(i + 1, j, k, 5));
@@ -1698,6 +1709,7 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_y(
         vm[5] = fm[l][i_shared + 3][tx];
         vm[6] = fm[l][i_shared + 4][tx];
 
+        // gc(i, j, k, l) = WENO7_bound(vp, vm, eps_here, if_shock, left_bound, right_bound, zone->my);
         gc(i, j, k, l) = WENO7(vp, vm, eps_here, if_shock);
       } else if (param->inviscid_scheme == 51) {
         real vp[5], vm[5];
@@ -2252,6 +2264,11 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_z(
   } else {
     if_shock = true;
   }
+  // int left_bound = -100, right_bound = -100;
+  // if (k < 3 && zone->bType_kl(i, j) != 0)
+  //   left_bound = k;
+  // if (k > zone->mz - 5 && zone->bType_kr(i, j) != 0)
+  //   right_bound = k;
 
   extern __shared__ real s[];
 
@@ -2280,9 +2297,9 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_z(
   const real kyJ = zone->metric(i, j, k, 7) * jac_l + zone->metric(i, j, k + 1, 7) * jac_r;
   const real kzJ = zone->metric(i, j, k, 8) * jac_l + zone->metric(i, j, k + 1, 8) * jac_r;
   real eps_ref{0};
-  if (if_shock) {
-    eps_ref = eps_weno * param->weno_eps_scale * 0.25 * (kxJ * kxJ + kyJ * kyJ + kzJ * kzJ);
-  }
+  // if (if_shock) {
+  eps_ref = eps_weno * param->weno_eps_scale; // * 0.25 * (kxJ * kxJ + kyJ * kyJ + kzJ * kzJ);
+  // }
   real kx = 0.5 * (zone->metric(i, j, k, 6) + zone->metric(i + 1, j, k, 6));
   real ky = 0.5 * (zone->metric(i, j, k, 7) + zone->metric(i + 1, j, k, 7));
   real kz = 0.5 * (zone->metric(i, j, k, 8) + zone->metric(i + 1, j, k, 8));
@@ -2368,6 +2385,7 @@ template<MixtureModel mix_model> __global__ void compute_convective_term_weno_z(
         vm[5] = fm[l][i_shared + 3][tx];
         vm[6] = fm[l][i_shared + 4][tx];
 
+        // hc(i, j, k, l) = WENO7_bound(vp, vm, eps_here, if_shock, left_bound, right_bound, zone->mz);
         hc(i, j, k, l) = WENO7(vp, vm, eps_here, if_shock);
       } else if (param->inviscid_scheme == 51) {
         real vp[5], vm[5];
@@ -3200,6 +3218,171 @@ __device__ real WENO7(const real *vp, const real *vm, real eps, bool if_shock) {
   v3 = 3 * vm[3] + 13 * vm[2] - 5 * vm[1] + vm[0];
   const real fMinus{one12th * (c0 * v0 + c1 * v1 + c2 * v2 + c3 * v3)};
 
+  return fPlus + fMinus;
+}
+
+__device__ real WENO7_bound(const real *vp, const real *vm, real eps, bool if_shock, int left, int right, int max) {
+  constexpr real one6th{1.0 / 6};
+
+  if (left == -100 && right == -100) {
+    if (if_shock) {
+      // Shocked, use WENO
+      // constexpr real one6th{1.0 / 6};
+      constexpr real d12{13.0 / 12.0}, d13{1043.0 / 960}, d14{1.0 / 12};
+
+      // Re-organize the data to improve locality
+      // 1st order derivative
+      real s1{one6th * (-2 * vp[0] + 9 * vp[1] - 18 * vp[2] + 11 * vp[3])};
+      // 2nd order derivative
+      real s2{-vp[0] + 4 * vp[1] - 5 * vp[2] + 2 * vp[3]};
+      // 3rd order derivative
+      real s3{-vp[0] + 3 * vp[1] - 3 * vp[2] + vp[3]};
+      real beta0{s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3};
+
+      s1 = one6th * (vp[1] - 6 * vp[2] + 3 * vp[3] + 2 * vp[4]);
+      s2 = vp[2] - 2 * vp[3] + vp[4];
+      s3 = -vp[1] + 3 * vp[2] - 3 * vp[3] + vp[4];
+      real beta1{s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3};
+
+      s1 = one6th * (-2 * vp[2] - 3 * vp[3] + 6 * vp[4] - vp[5]);
+      s3 = -vp[2] + 3 * vp[3] - 3 * vp[4] + vp[5];
+      real beta2{s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3};
+
+      s1 = one6th * (-11 * vp[3] + 18 * vp[4] - 9 * vp[5] + 2 * vp[6]);
+      s2 = 2 * vp[3] - 5 * vp[4] + 4 * vp[5] - vp[6];
+      s3 = -vp[3] + 3 * vp[4] - 3 * vp[5] + vp[6];
+      real beta3{s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3};
+
+      // real tau7sqr{(beta0 - beta3) * (beta0 - beta3)};
+      real tau7sqr = beta0 + 3 * beta1 - 3 * beta2 - beta3;
+      tau7sqr *= tau7sqr;
+      constexpr real c0{1.0 / 35}, c1{12.0 / 35}, c2{18.0 / 35}, c3{4.0 / 35};
+      // real a0{c0 + c0 * tau7sqr / ((eps + beta0) * (eps + beta0))};
+      // real a1{c1 + c1 * tau7sqr / ((eps + beta1) * (eps + beta1))};
+      // real a2{c2 + c2 * tau7sqr / ((eps + beta2) * (eps + beta2))};
+      // real a3{c3 + c3 * tau7sqr / ((eps + beta3) * (eps + beta3))};
+      real a0 = c0 / ((eps + beta0) * (eps + beta0));
+      real a1 = c1 / ((eps + beta1) * (eps + beta1));
+      real a2 = c2 / ((eps + beta2) * (eps + beta2));
+      real a3 = c3 / ((eps + beta3) * (eps + beta3));
+
+      constexpr real one12th{1.0 / 12};
+      real v0{-3 * vp[0] + 13 * vp[1] - 23 * vp[2] + 25 * vp[3]};
+      real v1{vp[1] - 5 * vp[2] + 13 * vp[3] + 3 * vp[4]};
+      real v2{-vp[2] + 7 * vp[3] + 7 * vp[4] - vp[5]};
+      real v3{3 * vp[3] + 13 * vp[4] - 5 * vp[5] + vp[6]};
+      const real fPlus{one12th * (a0 * v0 + a1 * v1 + a2 * v2 + a3 * v3) / (a0 + a1 + a2 + a3)};
+
+      // Minus part
+      s1 = one6th * (-2 * vm[6] + 9 * vm[5] - 18 * vm[4] + 11 * vm[3]);
+      s2 = -vm[6] + 4 * vm[5] - 5 * vm[4] + 2 * vm[3];
+      s3 = -vm[6] + 3 * vm[5] - 3 * vm[4] + vm[3];
+      beta0 = s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3;
+
+      s1 = one6th * (vm[5] - 6 * vm[4] + 3 * vm[3] + 2 * vm[2]);
+      s2 = vm[4] - 2 * vm[3] + vm[2];
+      s3 = -vm[5] + 3 * vm[4] - 3 * vm[3] + vm[2];
+      beta1 = s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3;
+
+      s1 = one6th * (-2 * vm[4] - 3 * vm[3] + 6 * vm[2] - vm[1]);
+      s3 = -vm[4] + 3 * vm[3] - 3 * vm[2] + vm[1];
+      beta2 = s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3;
+
+      s1 = one6th * (-11 * vm[3] + 18 * vm[2] - 9 * vm[1] + 2 * vm[0]);
+      s2 = 2 * vm[3] - 5 * vm[2] + 4 * vm[1] - vm[0];
+      s3 = -vm[3] + 3 * vm[2] - 3 * vm[1] + vm[0];
+      beta3 = s1 * s1 + d12 * s2 * s2 + d13 * s3 * s3 + d14 * s1 * s3;
+
+      // tau7sqr = (beta0 - beta3) * (beta0 - beta3);
+      tau7sqr = beta0 + 3 * beta1 - 3 * beta2 - beta3;
+      tau7sqr *= tau7sqr;
+      // a0 = c0 + c0 * tau7sqr / ((eps + beta0) * (eps + beta0));
+      // a1 = c1 + c1 * tau7sqr / ((eps + beta1) * (eps + beta1));
+      // a2 = c2 + c2 * tau7sqr / ((eps + beta2) * (eps + beta2));
+      // a3 = c3 + c3 * tau7sqr / ((eps + beta3) * (eps + beta3));
+      a0 = c0 / ((eps + beta0) * (eps + beta0));
+      a1 = c1 / ((eps + beta1) * (eps + beta1));
+      a2 = c2 / ((eps + beta2) * (eps + beta2));
+      a3 = c3 / ((eps + beta3) * (eps + beta3));
+
+      v0 = -3 * vm[6] + 13 * vm[5] - 23 * vm[4] + 25 * vm[3];
+      v1 = vm[5] - 5 * vm[4] + 13 * vm[3] + 3 * vm[2];
+      v2 = -vm[4] + 7 * vm[3] + 7 * vm[2] - vm[1];
+      v3 = 3 * vm[3] + 13 * vm[2] - 5 * vm[1] + vm[0];
+      const real fMinus{one12th * (a0 * v0 + a1 * v1 + a2 * v2 + a3 * v3) / (a0 + a1 + a2 + a3)};
+
+      return fPlus + fMinus;
+    }
+    constexpr real c0{1.0 / 35}, c1{12.0 / 35}, c2{18.0 / 35}, c3{4.0 / 35};
+    constexpr real one12th{1.0 / 12};
+    real v3{0}, v2{0}, v1{0}, v0{0};
+    v3 = 3 * vp[3] + 13 * vp[4] - 5 * vp[5] + vp[6];
+    v2 = -vp[2] + 7 * vp[3] + 7 * vp[4] - vp[5];
+    v1 = vp[1] - 5 * vp[2] + 13 * vp[3] + 3 * vp[4];
+    v0 = -3 * vp[0] + 13 * vp[1] - 23 * vp[2] + 25 * vp[3];
+    const real fPlus{one12th * (c0 * v0 + c1 * v1 + c2 * v2 + c3 * v3)};
+
+    // Minus part
+    v0 = -3 * vm[6] + 13 * vm[5] - 23 * vm[4] + 25 * vm[3];
+    v1 = vm[5] - 5 * vm[4] + 13 * vm[3] + 3 * vm[2];
+    v2 = -vm[4] + 7 * vm[3] + 7 * vm[2] - vm[1];
+    v3 = 3 * vm[3] + 13 * vm[2] - 5 * vm[1] + vm[0];
+    const real fMinus{one12th * (c0 * v0 + c1 * v1 + c2 * v2 + c3 * v3)};
+
+    return fPlus + fMinus;
+  }
+
+  constexpr real thirteen12th{13.0 / 12};
+  constexpr real three10th{0.3}, six10th{0.6}, one10th{0.1};
+
+  real v0_p{0}, v1_p{0}, v2_p{0}, a0_p{0}, a1_p{0}, a2_p{0};
+  real v0_m{0}, v1_m{0}, v2_m{0}, a0_m{0}, a1_m{0}, a2_m{0};
+  if (left == -1 && right == -100) {
+    v0_p = one6th * (2 * vp[4] + 5 * vp[5] - vp[6]);
+    a0_p = 1;
+  }
+  if (right != max - 2 && right != max - 1 && left != -1) {
+    v0_p = one6th * (2 * vp[3] + 5 * vp[4] - vp[5]);
+    real beta0 = thirteen12th * (vp[3] + vp[5] - 2 * vp[4]) * (vp[3] + vp[5] - 2 * vp[4]) +
+                 0.25 * (3 * vp[3] - 4 * vp[4] + vp[5]) * (3 * vp[3] - 4 * vp[4] + vp[5]);
+    a0_p = three10th / ((eps + beta0) * (eps + beta0));
+  }
+  if (left > 0 || (right != max - 1 && left == -100)) {
+    v1_p = one6th * (-vp[2] + 5 * vp[3] + 2 * vp[4]);
+    real beta1 = thirteen12th * (vp[2] + vp[4] - 2 * vp[3]) * (vp[2] + vp[4] - 2 * vp[3]) +
+                 0.25 * (vp[2] - vp[4]) * (vp[2] - vp[4]);
+    a1_p = six10th / ((eps + beta1) * (eps + beta1));
+  }
+  if (left == 2 || left == -100) {
+    v2_p = one6th * (2 * vp[1] - 7 * vp[2] + 11 * vp[3]);
+    real beta2 = thirteen12th * (vp[1] + vp[3] - 2 * vp[2]) * (vp[1] + vp[3] - 2 * vp[2]) +
+                 0.25 * (vp[1] - 4 * vp[2] + 3 * vp[3]) * (vp[1] - 4 * vp[2] + 3 * vp[3]);
+    a2_p = one10th / ((eps + beta2) * (eps + beta2));
+  }
+  if (right == -100 || right == max - 4) {
+    v0_m = one6th * (11 * vm[3] - 7 * vm[4] + 2 * vm[5]);
+    real beta0 = thirteen12th * (vm[3] + vm[5] - 2 * vm[4]) * (vm[3] + vm[5] - 2 * vm[4]) +
+                 0.25 * (3 * vm[3] - 4 * vm[4] + vm[5]) * (3 * vm[3] - 4 * vm[4] + vm[5]);
+    a0_m = one10th / ((eps + beta0) * (eps + beta0));
+  }
+  if (left > -1 || (right < max - 2 && left == -100)) {
+    v1_m = one6th * (2 * vm[2] + 5 * vm[3] - vm[4]);
+    real beta1 = thirteen12th * (vm[2] + vm[4] - 2 * vm[3]) * (vm[2] + vm[4] - 2 * vm[3]) +
+                 0.25 * (vm[2] - vm[4]) * (vm[2] - vm[4]);
+    a1_m = six10th / ((eps + beta1) * (eps + beta1));
+  }
+  if (left > 0 || (right < max - 1 && left == -100)) {
+    v2_m = one6th * (-vm[1] + 5 * vm[2] + 2 * vm[3]);
+    real beta2 = thirteen12th * (vm[1] + vm[3] - 2 * vm[2]) * (vm[1] + vm[3] - 2 * vm[2]) +
+                 0.25 * (vm[1] - 4 * vm[2] + 3 * vm[3]) * (vm[1] - 4 * vm[2] + 3 * vm[3]);
+    a2_m = three10th / ((eps + beta2) * (eps + beta2));
+  }
+  if (right == max - 1 && left == -100) {
+    v0_m = one6th * (-vm[0] + 5 * vm[1] + 2 * vm[2]);
+    a0_m = 1;
+  }
+  const real fPlus = (a0_p * v0_p + a1_p * v1_p + a2_p * v2_p) / (a0_p + a1_p + a2_p);
+  const real fMinus = (a0_m * v0_m + a1_m * v1_m + a2_m * v2_m) / (a0_m + a1_m + a2_m);
   return fPlus + fMinus;
 }
 

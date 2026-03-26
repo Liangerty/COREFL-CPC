@@ -28,8 +28,15 @@ template<MixtureModel mix_model> void initialize_basic_variables(Parameter &para
   switch (init_method) {
     case 0:
       initialize_from_start(parameter, mesh, field, species);
+      if (parameter.get_int("myid") == 0) {
+        printf("\t->-> %-20s : initialization method.\n", "From start");
+        std::ofstream history("history.dat", std::ios::trunc);
+        history << "step\tdt(s)\tt(s)\terror_max\n";
+        history.close();
+      }
       break;
     case 1:
+      initialize_from_start(parameter, mesh, field, species);
       read_flowfield<mix_model>(parameter, mesh, field, species);
       break;
     case 2: // Read a 2D profile, all span-wise layers are initialized with the same profile.
@@ -85,12 +92,6 @@ void initialize_from_start(Parameter &parameter, const Mesh &mesh, std::vector<F
   parameter.update_parameter("solution_time", 0.0);
 
   MPI_Barrier(MPI_COMM_WORLD);
-  if (parameter.get_int("myid") == 0) {
-    printf("\t->-> %-20s : initialization method.\n", "From start");
-    std::ofstream history("history.dat", std::ios::trunc);
-    history << "step\tdt(s)\tt(s)\terror_max\n";
-    history.close();
-  }
 }
 
 template<MixtureModel mix_model> void read_flowfield(Parameter &parameter, const Mesh &mesh, std::vector<Field> &field,

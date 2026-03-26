@@ -111,7 +111,7 @@ template<MixtureModel mix_model> void IOManager<mix_model>::manage_output(int st
     if (n_rand > 0)
       write_rng(mesh, parameter, field);
     if (if_collect_statistics && step > collect_statistics_iter_start)
-      stat_collector.export_statistical_data();
+      stat_collector.export_statistical_data(param);
     // post_process(driver);
     if (if_monitor_points)
       monitor.output_point_monitors();

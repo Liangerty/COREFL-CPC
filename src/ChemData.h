@@ -3,9 +3,9 @@
 #include "Define.h"
 #include "Parameter.h"
 #include "gxl_lib/Matrix.hpp"
-#ifdef HighTempMultiPart
+// #ifdef HighTempMultiPart
 #include "gxl_lib/Array.hpp"
-#endif
+// #endif
 
 namespace cfd {
 struct Species {
@@ -27,14 +27,14 @@ struct Species {
   gxl::MatrixDyn<real> elem_comp;       // the element composition of the species
   std::vector<real> mw;                 // the array of molecular weights
   // Thermodynamic properties
-  #ifdef HighTempMultiPart
+  // #ifdef HighTempMultiPart
   std::vector<int> n_temperature_range;   // the number of temperature ranges
   gxl::MatrixDyn<real> temperature_range; // the temperature range of the thermodynamic sections
   gxl::Array3D<real> therm_poly_coeff;    // the polynomial coefficients of the thermodynamic sections
-  #else // Combustion2Part
+  // #else // Combustion2Part
   std::vector<real> t_low, t_mid, t_high;               // the array of thermodynamic sections
   gxl::MatrixDyn<real> high_temp_coeff, low_temp_coeff; // the cp/h/s polynomial coefficients
-  #endif
+  // #endif
   // Transport properties
   std::vector<real> geometry; // if the species is monatomic(0), linear(1), or nonlinear(2)
   std::vector<real> LJ_potent_inv; // the inverse of the Lennard-Jones potential

@@ -93,7 +93,7 @@ if __name__ == "__main__":
     def exact_rho(x_val: float) -> float:
         return 1.5 + np.sin(2.0*3.141592653589793*x_val)
 
-    path_to_plt = "../../output/time_series/flowfield_1.0000e+00s.plt"
+    path_to_plt = "./output/time_series/flowfield_1.0000e+00s.plt"
     try:
         results = extract_centerline_errors(path_to_plt, "density", exact_rho, x_variable_name="x")
         print(f"L_inf: {results['linf']}, L1: {results['l1']}, L2: {results['l2']}")
